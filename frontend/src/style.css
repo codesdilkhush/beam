@@ -1,17 +1,15 @@
-@import "tailwindcss";
-
 :root {
   /* Surfaces & Frosted Glass */
-  --surface-canvas: rgba(16, 18, 24, 0.85);
-  --surface-header: rgba(22, 25, 35, 0.90);
-  --surface-card: rgba(255, 255, 255, 0.035);
+  --surface-canvas: rgba(18, 20, 28, 0.94);
+  --surface-header: rgba(24, 27, 38, 0.96);
+  --surface-card: rgba(24, 28, 40, 0.75);
   --surface-card-border: rgba(255, 255, 255, 0.08);
-  --surface-hover: rgba(255, 255, 255, 0.06);
+  --surface-hover: rgba(255, 255, 255, 0.05);
   --surface-selected: rgba(56, 117, 246, 0.16);
 
   /* Raycast Electric Glass Blue Palette */
   --accent-blue: #3875f6;
-  --accent-blue-glow: rgba(56, 117, 246, 0.4);
+  --accent-blue-glow: rgba(56, 117, 246, 0.35);
   --accent-sky: #60a5fa;
   --accent-emerald: #10b981;
   --accent-purple: #a855f7;
@@ -30,33 +28,36 @@
 
 /* Theme Presets */
 .theme-catppuccin {
-  --surface-canvas: rgba(30, 30, 46, 0.92);
-  --surface-header: rgba(24, 24, 37, 0.95);
+  --surface-canvas: rgba(30, 30, 46, 0.94);
+  --surface-header: rgba(24, 24, 37, 0.96);
+  --surface-card: rgba(36, 36, 56, 0.75);
   --accent-blue: #89b4fa;
-  --accent-blue-glow: rgba(137, 180, 250, 0.4);
+  --accent-blue-glow: rgba(137, 180, 250, 0.35);
   --surface-selected: rgba(137, 180, 250, 0.16);
   --border-selected: rgba(137, 180, 250, 0.4);
 }
 
 .theme-tokyo {
-  --surface-canvas: rgba(26, 27, 38, 0.92);
-  --surface-header: rgba(22, 22, 30, 0.95);
+  --surface-canvas: rgba(26, 27, 38, 0.94);
+  --surface-header: rgba(22, 22, 30, 0.96);
+  --surface-card: rgba(32, 34, 48, 0.75);
   --accent-blue: #7aa2f7;
-  --accent-blue-glow: rgba(122, 162, 247, 0.4);
+  --accent-blue-glow: rgba(122, 162, 247, 0.35);
   --surface-selected: rgba(122, 162, 247, 0.16);
   --border-selected: rgba(122, 162, 247, 0.4);
 }
 
 .theme-nord {
-  --surface-canvas: rgba(46, 52, 64, 0.92);
-  --surface-header: rgba(36, 41, 51, 0.95);
+  --surface-canvas: rgba(46, 52, 64, 0.94);
+  --surface-header: rgba(36, 41, 51, 0.96);
+  --surface-card: rgba(52, 59, 72, 0.75);
   --accent-blue: #88c0d0;
-  --accent-blue-glow: rgba(136, 192, 208, 0.4);
+  --accent-blue-glow: rgba(136, 192, 208, 0.35);
   --surface-selected: rgba(136, 192, 208, 0.16);
   --border-selected: rgba(136, 192, 208, 0.4);
 }
 
-* {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -82,27 +83,27 @@ html, body {
   background-color: transparent;
 }
 
-/* Custom modern scrollbars */
+/* Custom modern frosted scrollbars */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
 }
 
-/* KBD shortcut styling */
+/* KBD styling */
 kbd {
   font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
   font-size: 11px;
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 4px;
   padding: 1px 5px;
   color: var(--text-secondary);

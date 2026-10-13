@@ -155,8 +155,11 @@ beam/
   - Use modern Svelte 5 runes (`$state`, `$derived`, `$effect`).
   - Do not mix legacy Svelte 3/4 stores or syntax when runes apply.
   - Follow the glassmorphism design system in [design_guidelines.md](design_guidelines.md) (electric blue accents, translucent dark backdrops, smooth transitions).
-- **Tailwind CSS v4 Conventions**:
-  - Use native Tailwind v4 utilities. Avoid arbitrary CSS hacks or duplicate utility classes.
+- **Custom Glassmorphism CSS Conventions**:
+  - Pure custom CSS with centralized design tokens in `frontend/src/style.css`.
+  - Zero Tailwind CSS. Use clean, scoped, semantic CSS in component `<style>` blocks.
+  - Consistent colors (`--surface-canvas`, `--surface-header`, `--surface-card`, `--accent-blue`, `--accent-sky`, `--border-glass`, `--border-subtle`).
+  - Follow the glassmorphism design system in [design_guidelines.md](design_guidelines.md) (electric blue accents, translucent dark backdrops, smooth transitions).
 - **Strict Zero-Emoji Policy (Applications & Docs)**:
   - Never use emojis anywhere in the application code, UI components, templates, or documentation files.
   - Use vector SVGs, Lucide icons, or semantic plain text for all visual indicators and badges.
@@ -208,5 +211,37 @@ Every functional Go file in `backend/` must have a dedicated corresponding test 
 2. **Table-Driven Tests**: Prefer table-driven testing patterns for parsers, evaluators, and search algorithms.
 3. **No External Network Dependencies in Unit Tests**: Unit tests must execute locally and offline without requiring internet access or graphical window surfaces.
 4. **Fast Execution**: Unit tests must run to completion within milliseconds (`make test`).
+
+---
+
+## 8. Frontend Modular Architecture & Pure Glassmorphism CSS Policy
+
+> [!IMPORTANT]
+> **No Monolithic Frontend Files & Pure Custom Glassmorphism CSS.**
+> - Never pack all templates, state, styles, and utilities into a single giant file.
+> - **Pure Custom CSS (Zero Tailwind)**: Use scoped custom CSS in component `<style>` blocks with consistent global design tokens.
+> - **Rich Glassmorphism**: Maintain consistent frosted-glass visual hierarchy (`backdrop-filter: blur(...)`, electric blue highlights, subtle borders).
+
+Frontend source code in `frontend/src/` must adhere to modular separation:
+
+1. **Consistent Custom Glassmorphism CSS**:
+   - Centralize design tokens and theme palettes (`--surface-canvas`, `--surface-card`, `--accent-blue`, etc.) in `style.css`.
+   - Style components using clean, scoped CSS in each component's `<style>` block.
+   - Do not use Tailwind CSS. Rely on standard, deterministic CSS flexbox and grid.
+
+2. **Dedicated Svelte Components (`frontend/src/components/`)**:
+   - Break UI features into focused, single-responsibility components.
+   - Examples: `Header.svelte`, `ResultsList.svelte`, `DetailPanel.svelte`, `ActionPalette.svelte`, `Footer.svelte`, `MathBanner.svelte`.
+   - Components receive typed props via Svelte 5 `$props()` and communicate callbacks cleanly.
+   - Max file size recommendation: under 180 lines per component.
+
+3. **Domain Utilities & Pure Functions (`frontend/src/utils/`)**:
+   - Pure utility functions (e.g., viewport scroll calculations, date/time formatting, DOM helpers) must live in dedicated `.ts` files:
+     - `utils/scroll.ts`: Viewport synchronization and scroll calculation logic.
+     - `utils/format.ts`: Timestamp formatting, string truncation, and number formatting.
+
+4. **Shared TypeScript Interfaces & Types (`frontend/src/types/`)**:
+   - Shared data contracts, model interfaces, and union types must live in `types/` (e.g., `frontend/src/types/index.ts`).
+   - Do not redefine identical types locally across multiple files.
 
 
