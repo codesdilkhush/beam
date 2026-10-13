@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -20,6 +21,8 @@ type AppInfo struct {
 	IconPath    string `json:"iconPath"`
 	Terminal    bool   `json:"terminal"`
 	DesktopPath string `json:"desktopPath"`
+	Score       int    `json:"score"`
+	LaunchCount int    `json:"launchCount"`
 }
 
 var (
@@ -51,6 +54,7 @@ func ScanApplications() []AppInfo {
 
 	var apps []AppInfo
 	seen := make(map[string]bool)
+	stats := GetStatsTracker()
 
 	dirs := GetDesktopDirectories()
 	for _, dir := range dirs {
@@ -70,7 +74,6 @@ func ScanApplications() []AppInfo {
 				continue
 			}
 
-			// Deduplicate by Name or Exec command
 			key := strings.ToLower(app.Name)
 			if seen[key] {
 				continue
@@ -78,6 +81,7 @@ func ScanApplications() []AppInfo {
 			seen[key] = true
 
 			app.IconPath = findIconPath(app.Icon)
+			app.LaunchCount = stats.GetCount(app.ID)
 			apps = append(apps, app)
 		}
 	}
@@ -93,7 +97,62 @@ func GetCachedApplications() []AppInfo {
 		appsMutex.RUnlock()
 		return ScanApplications()
 	}
-	return appsCache
+
+	// Attach latest launch counts
+	stats := GetStatsTracker()
+	result := make([]AppInfo, len(appsCache))
+	for i, a := range appsCache {
+		a.LaunchCount = stats.GetCount(a.ID)
+		result[i] = a
+	}
+	return result
+}
+
+func SearchApplications(query string) []AppInfo {
+	apps := GetCachedApplications()
+	q := strings.TrimSpace(query)
+
+	if q == "" {
+		// Sort by launch count descending, then alphabetical
+		sort.Slice(apps, func(i, j int) bool {
+			if apps[i].LaunchCount != apps[j].LaunchCount {
+				return apps[i].LaunchCount > apps[j].LaunchCount
+			}
+			return strings.ToLower(apps[i].Name) < strings.ToLower(apps[j].Name)
+		})
+		return apps
+	}
+
+	var matched []AppInfo
+	for _, app := range apps {
+		nameMatch := FuzzyScore(q, app.Name)
+		execMatch := FuzzyScore(q, filepath.Base(app.Exec))
+		commentMatch := FuzzyScore(q, app.Comment)
+
+		bestScore := 0
+		if nameMatch.Matched && nameMatch.Score*2 > bestScore {
+			bestScore = nameMatch.Score * 2
+		}
+		if execMatch.Matched && execMatch.Score > bestScore {
+			bestScore = execMatch.Score
+		}
+		if commentMatch.Matched && commentMatch.Score/2 > bestScore {
+			bestScore = commentMatch.Score / 2
+		}
+
+		if bestScore > 0 {
+			// Frequency boost
+			totalScore := bestScore + (app.LaunchCount * 25)
+			app.Score = totalScore
+			matched = append(matched, app)
+		}
+	}
+
+	sort.Slice(matched, func(i, j int) bool {
+		return matched[i].Score > matched[j].Score
+	})
+
+	return matched
 }
 
 func parseDesktopFile(path string) (AppInfo, error) {
@@ -143,7 +202,6 @@ func parseDesktopFile(path string) (AppInfo, error) {
 				app.Comment = val
 			}
 		case "Exec":
-			// Clean Exec parameters like %u, %F, %U
 			clean := percentRe.ReplaceAllString(val, "")
 			app.Exec = strings.TrimSpace(clean)
 		case "Icon":
@@ -169,7 +227,6 @@ func findIconPath(iconName string) string {
 		}
 	}
 
-	// Search common icon locations
 	iconSearchPaths := []string{
 		"/usr/share/pixmaps",
 		"/usr/share/icons/hicolor/scalable/apps",
@@ -188,7 +245,6 @@ func findIconPath(iconName string) string {
 				return full
 			}
 		}
-		// Direct name match
 		direct := filepath.Join(basePath, iconName)
 		if _, err := os.Stat(direct); err == nil {
 			return direct
@@ -198,9 +254,13 @@ func findIconPath(iconName string) string {
 	return ""
 }
 
-func Launch(execCmd string, terminal bool) error {
+func Launch(execCmd string, terminal bool, appID string) error {
 	if execCmd == "" {
 		return fmt.Errorf("empty command")
+	}
+
+	if appID != "" {
+		GetStatsTracker().Increment(appID)
 	}
 
 	parts := strings.Fields(execCmd)
@@ -213,7 +273,6 @@ func Launch(execCmd string, terminal bool) error {
 
 	var cmd *exec.Cmd
 	if terminal {
-		// Try launching in a default terminal
 		terms := []string{"x-terminal-emulator", "gnome-terminal", "alacritty", "kitty", "foot", "xterm"}
 		var termFound string
 		for _, t := range terms {

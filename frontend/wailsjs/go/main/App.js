@@ -22,8 +22,8 @@ export function HideWindow() {
   return window['go']['main']['App']['HideWindow']();
 }
 
-export function LaunchApp(arg1, arg2) {
-  return window['go']['main']['App']['LaunchApp'](arg1, arg2);
+export function LaunchApp(arg1, arg2, arg3) {
+  return window['go']['main']['App']['LaunchApp'](arg1, arg2, arg3);
 }
 
 export function LoadIconAsDataURL(arg1) {
@@ -36,4 +36,8 @@ export function OpenURL(arg1) {
 
 export function QuitApp() {
   return window['go']['main']['App']['QuitApp']();
+}
+
+export function SearchApps(arg1) {
+  return window['go']['main']['App']['SearchApps'](arg1);
 }

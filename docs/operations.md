@@ -1,4 +1,4 @@
-# ⚙️ Beam Operations & Developer Guide (Bun & Tailwind CSS)
+# Beam Operations & Developer Guide (Bun & Tailwind CSS)
 
 ## 1. System Requirements & Dependencies
 

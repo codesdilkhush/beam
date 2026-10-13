@@ -39,9 +39,14 @@ func (a *App) GetApplications() []backend.AppInfo {
 	return backend.GetCachedApplications()
 }
 
-// LaunchApp launches the chosen application
-func (a *App) LaunchApp(execCmd string, terminal bool) error {
-	err := backend.Launch(execCmd, terminal)
+// SearchApps filters applications using fzf-style fuzzy scoring and frequency boost
+func (a *App) SearchApps(query string) []backend.AppInfo {
+	return backend.SearchApplications(query)
+}
+
+// LaunchApp launches the chosen application and tracks launch stats
+func (a *App) LaunchApp(execCmd string, terminal bool, appID string) error {
+	err := backend.Launch(execCmd, terminal, appID)
 	if err == nil {
 		// Hide window after successful launch
 		runtime.WindowHide(a.ctx)

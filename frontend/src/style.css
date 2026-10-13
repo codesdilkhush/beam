@@ -1,19 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  --bg-main: #14151b;
-  --bg-card: #1c1d25;
-  --bg-card-hover: #262833;
-  --bg-selected: #2e303e;
-  --bg-input: #191a22;
-  --border-color: #2b2d3a;
-  --text-main: #f3f4f6;
-  --text-muted: #9ca3af;
-  --text-dim: #6b7280;
-  --accent: #ff6363;
-  --accent-blue: #3b82f6;
+  /* Surfaces & Frosted Glass */
+  --surface-canvas: rgba(16, 18, 24, 0.85);
+  --surface-header: rgba(22, 25, 35, 0.90);
+  --surface-card: rgba(255, 255, 255, 0.035);
+  --surface-card-border: rgba(255, 255, 255, 0.08);
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --surface-selected: rgba(56, 117, 246, 0.16);
+
+  /* Raycast Electric Glass Blue Palette */
+  --accent-blue: #3875f6;
+  --accent-blue-glow: rgba(56, 117, 246, 0.4);
+  --accent-sky: #60a5fa;
+  --accent-emerald: #10b981;
   --accent-purple: #a855f7;
-  --accent-green: #10b981;
+  --accent-amber: #f59e0b;
+
+  /* Glass Borders */
+  --border-glass: rgba(255, 255, 255, 0.12);
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-selected: rgba(56, 117, 246, 0.4);
+
+  /* Typography */
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
 }
 
 * {
@@ -28,8 +40,8 @@ html, body {
   height: 100%;
   overflow: hidden;
   background-color: transparent;
-  color: var(--text-main);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Ubuntu, sans-serif;
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Ubuntu, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -39,19 +51,32 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
+  background-color: transparent;
 }
 
-/* Custom scrollbars */
+/* Custom modern scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* KBD shortcut styling */
+kbd {
+  font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--text-secondary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }

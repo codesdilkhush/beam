@@ -9,6 +9,8 @@ export namespace backend {
 	    iconPath: string;
 	    terminal: boolean;
 	    desktopPath: string;
+	    score: number;
+	    launchCount: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new AppInfo(source);
@@ -24,6 +26,8 @@ export namespace backend {
 	        this.iconPath = source["iconPath"];
 	        this.terminal = source["terminal"];
 	        this.desktopPath = source["desktopPath"];
+	        this.score = source["score"];
+	        this.launchCount = source["launchCount"];
 	    }
 	}
 	export class CalcResult {

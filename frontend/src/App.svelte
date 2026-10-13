@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
+    SearchApps,
     GetApplications,
     LaunchApp,
     GetClipboard,
@@ -8,7 +9,6 @@
     EvaluateMath,
     OpenURL,
     HideWindow,
-    QuitApp,
     LoadIconAsDataURL
   } from '../wailsjs/go/main/App.js';
 
@@ -21,6 +21,8 @@
     iconPath: string;
     terminal: boolean;
     desktopPath: string;
+    score: number;
+    launchCount: number;
     resolvedIcon?: string;
   }
 
@@ -42,34 +44,36 @@
   let activeTab = $state<'all' | 'apps' | 'clipboard'>('all');
   let selectedIndex = $state(0);
 
-  let allApps = $state<AppItem[]>([]);
+  let searchResults = $state<AppItem[]>([]);
   let clipboardItems = $state<ClipboardEntry[]>([]);
   let mathResult = $state<CalcItem | null>(null);
 
   let searchInputRef = $state<HTMLInputElement | null>(null);
 
   onMount(async () => {
-    await refreshApps();
+    await performAppSearch('');
     await refreshClipboard();
     if (searchInputRef) {
       searchInputRef.focus();
     }
   });
 
-  async function refreshApps() {
+  async function performAppSearch(query: string) {
     try {
-      const apps = await GetApplications();
-      allApps = apps || [];
-      // Lazy load some icons
-      for (const app of allApps.slice(0, 30)) {
-        if (app.iconPath) {
+      const q = query.replace(/^\/clip\s*/, '').trim();
+      const apps = await SearchApps(q);
+      searchResults = apps || [];
+
+      // Lazy load icons for top items
+      for (const app of searchResults.slice(0, 25)) {
+        if (app.iconPath && !app.resolvedIcon) {
           LoadIconAsDataURL(app.iconPath).then((dataUrl: string) => {
             if (dataUrl) app.resolvedIcon = dataUrl;
           });
         }
       }
     } catch (e) {
-      console.error('Failed to load apps:', e);
+      console.error('Failed to search apps:', e);
     }
   }
 
@@ -82,34 +86,33 @@
     }
   }
 
+  // Reactive search trigger
+  $effect(() => {
+    const q = searchQuery;
+    if (!isClipboardMode) {
+      performAppSearch(q);
+    }
+    selectedIndex = 0;
+  });
+
   // Handle live calculation
   $effect(() => {
     const q = searchQuery.trim();
     if (q.length > 1 && /[0-9\+\-\*\/\%\^\(\)]/.test(q)) {
-      EvaluateMath(q).then((res) => {
-        if (res && res.success) {
-          mathResult = res;
-        } else {
+      EvaluateMath(q)
+        .then((res) => {
+          if (res && res.success) {
+            mathResult = res;
+          } else {
+            mathResult = null;
+          }
+        })
+        .catch(() => {
           mathResult = null;
-        }
-      }).catch(() => {
-        mathResult = null;
-      });
+        });
     } else {
       mathResult = null;
     }
-  });
-
-  // Filter items
-  let filteredApps = $derived.by(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q || q === '/clip' || q.startsWith('/clip ')) return allApps;
-    return allApps.filter(
-      (a) =>
-        a.name.toLowerCase().includes(q) ||
-        (a.comment && a.comment.toLowerCase().includes(q)) ||
-        (a.exec && a.exec.toLowerCase().includes(q))
-    );
   });
 
   let isClipboardMode = $derived.by(() => {
@@ -122,7 +125,7 @@
       if (!clipQuery) return clipboardItems;
       return clipboardItems.filter((c) => c.content.toLowerCase().includes(clipQuery));
     }
-    return filteredApps;
+    return searchResults;
   });
 
   let selectedApp = $derived(
@@ -181,9 +184,8 @@
       }
     } else {
       if (selectedApp) {
-        await LaunchApp(selectedApp.exec, selectedApp.terminal);
+        await LaunchApp(selectedApp.exec, selectedApp.terminal, selectedApp.id);
       } else if (searchQuery.trim()) {
-        // Fallback to Google search
         await OpenURL(`https://www.google.com/search?q=${encodeURI(searchQuery.trim())}`);
       }
     }
@@ -193,15 +195,29 @@
     selectedIndex = idx;
     executeCurrentSelection();
   }
+
+  function formatTime(iso: string) {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      const diffSec = Math.floor((Date.now() - d.getTime()) / 1000);
+      if (diffSec < 60) return 'Just now';
+      if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+      if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+      return `${Math.floor(diffSec / 86400)}d ago`;
+    } catch {
+      return '';
+    }
+  }
 </script>
 
 <svelte:window onkeydown={handleKeyDown} />
 
 <div class="beam-window">
-  <!-- Top Bar: Search Input & Mode Chips -->
+  <!-- Top Search Bar -->
   <header class="beam-header">
     <div class="search-icon">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
         <circle cx="11" cy="11" r="8"></circle>
         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
       </svg>
@@ -224,7 +240,7 @@
     {/if}
   </header>
 
-  <!-- Math Inline Banner if active -->
+  <!-- Math Inline Banner (Emerald Glow) -->
   {#if mathResult && mathResult.success && !isClipboardMode}
     <button type="button" class="math-banner" onclick={() => CopyToClipboard(mathResult?.result || '')}>
       <div class="math-left">
@@ -233,19 +249,19 @@
         <span class="math-res">{mathResult.result}</span>
       </div>
       <div class="math-right">
-        <span class="key-hint">↵ Copy Result</span>
+        <span class="key-hint"><kbd>↵</kbd> Copy Result</span>
       </div>
     </button>
   {/if}
 
-  <!-- Split Main Body: Results List + Detail Pane -->
+  <!-- Split View: Results (60%) + Details (40%) -->
   <div class="beam-body">
-    <!-- Results List (Left) -->
+    <!-- Results List -->
     <div class="results-list">
       {#if displayItems.length === 0}
         <div class="empty-state">
           <p>No results found for "{searchQuery}"</p>
-          <span class="empty-hint">Press ↵ to search on Google</span>
+          <span class="empty-hint">Press <kbd>↵</kbd> to search on Google</span>
         </div>
       {:else}
         {#each displayItems as item, idx}
@@ -257,20 +273,22 @@
             onmouseenter={() => (selectedIndex = idx)}
           >
             {#if isClipboardMode}
-              <!-- Clipboard Row -->
+              <!-- Clipboard Entry -->
               {@const clip = item as ClipboardEntry}
               <div class="item-icon-box clip-icon">
                 <span>📋</span>
               </div>
               <div class="item-info">
                 <span class="item-title truncate">{clip.preview}</span>
-                <span class="item-subtitle">{clip.charCount} characters</span>
+                <span class="item-subtitle">
+                  {clip.charCount} chars {clip.timestamp ? `• ${formatTime(clip.timestamp)}` : ''}
+                </span>
               </div>
               {#if isSelected}
                 <span class="item-action-pill">↵ Copy</span>
               {/if}
             {:else}
-              <!-- App Row -->
+              <!-- App Entry -->
               {@const app = item as AppItem}
               <div class="item-icon-box">
                 {#if app.resolvedIcon}
@@ -280,7 +298,12 @@
                 {/if}
               </div>
               <div class="item-info">
-                <span class="item-title">{app.name}</span>
+                <div class="title-row">
+                  <span class="item-title">{app.name}</span>
+                  {#if app.launchCount > 0}
+                    <span class="usage-badge" title="Launched {app.launchCount} times">★ {app.launchCount}</span>
+                  {/if}
+                </div>
                 <span class="item-subtitle truncate">{app.comment || app.exec}</span>
               </div>
               {#if isSelected}
@@ -292,7 +315,7 @@
       {/if}
     </div>
 
-    <!-- Right Detail Panel -->
+    <!-- Detail Panel (40%) -->
     <div class="detail-panel">
       {#if isClipboardMode && selectedClip}
         <div class="detail-header">
@@ -320,43 +343,50 @@
         <div class="detail-specs">
           <div class="spec-row">
             <span class="spec-label">Command</span>
-            <span class="spec-val truncate">{selectedApp.exec}</span>
+            <span class="spec-val truncate code-font">{selectedApp.exec}</span>
           </div>
           {#if selectedApp.comment}
             <div class="spec-row">
-              <span class="spec-label">About</span>
+              <span class="spec-label">Description</span>
               <span class="spec-val">{selectedApp.comment}</span>
             </div>
           {/if}
           <div class="spec-row">
             <span class="spec-label">Desktop File</span>
-            <span class="spec-val truncate">{selectedApp.id}</span>
+            <span class="spec-val truncate code-font">{selectedApp.id}</span>
           </div>
+          {#if selectedApp.launchCount > 0}
+            <div class="spec-row">
+              <span class="spec-label">Frequency</span>
+              <span class="spec-val">Launched {selectedApp.launchCount} times</span>
+            </div>
+          {/if}
         </div>
       {:else}
         <div class="detail-placeholder">
+          <div class="placeholder-icon">⚡</div>
           <p>Beam Launcher</p>
-          <span>Fast, keyboard-driven workflow for Linux</span>
+          <span>Raycast-grade speed on Linux</span>
         </div>
       {/if}
     </div>
   </div>
 
-  <!-- Bottom Footer -->
+  <!-- Footer Action Bar -->
   <footer class="beam-footer">
     <div class="footer-left">
       {#if isClipboardMode}
-        <span class="key-pill">↵ Copy to Clipboard</span>
+        <span class="key-pill"><kbd>↵</kbd> Copy to Clipboard</span>
       {:else if selectedApp}
-        <span class="key-pill">↵ Open Application</span>
+        <span class="key-pill"><kbd>↵</kbd> Open Application</span>
       {:else}
-        <span class="key-pill">↵ Search Online</span>
+        <span class="key-pill"><kbd>↵</kbd> Search Online</span>
       {/if}
     </div>
     <div class="footer-right">
-      <span class="footer-hint">Tab: Mode</span>
-      <span class="footer-hint">↑↓: Navigate</span>
-      <span class="footer-hint">Esc: Close</span>
+      <span class="footer-hint"><kbd>Tab</kbd> Mode</span>
+      <span class="footer-hint"><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+      <span class="footer-hint"><kbd>Esc</kbd> Close</span>
     </div>
   </footer>
 </div>
@@ -365,10 +395,12 @@
   .beam-window {
     width: 760px;
     height: 500px;
-    background: #14151b;
-    border: 1px solid #282a36;
+    background: var(--surface-canvas);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid var(--border-glass);
     border-radius: 14px;
-    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -377,18 +409,20 @@
   /* Header */
   .beam-header {
     height: 60px;
-    border-bottom: 1px solid #232530;
+    border-bottom: 1px solid var(--border-subtle);
     display: flex;
     align-items: center;
     padding: 0 18px;
     gap: 12px;
-    background: #171821;
+    background: var(--surface-header);
+    backdrop-filter: blur(16px);
   }
 
   .search-icon {
-    color: #6b7280;
+    color: var(--accent-sky);
     display: flex;
     align-items: center;
+    opacity: 0.85;
   }
 
   .search-input {
@@ -396,13 +430,13 @@
     background: transparent;
     border: none;
     outline: none;
-    color: #f3f4f6;
+    color: var(--text-primary);
     font-size: 19px;
     font-weight: 500;
   }
 
   .search-input::placeholder {
-    color: #4b5563;
+    color: var(--text-muted);
   }
 
   .mode-badge {
@@ -410,26 +444,27 @@
     padding: 4px 10px;
     border-radius: 20px;
     font-weight: 600;
+    backdrop-filter: blur(8px);
   }
 
   .clip-badge {
-    background: rgba(59, 130, 246, 0.15);
-    color: #60a5fa;
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: rgba(56, 117, 246, 0.16);
+    color: var(--accent-sky);
+    border: 1px solid rgba(56, 117, 246, 0.35);
   }
 
   .app-badge {
-    background: rgba(168, 85, 247, 0.15);
+    background: rgba(168, 85, 247, 0.16);
     color: #c084fc;
-    border: 1px solid rgba(168, 85, 247, 0.3);
+    border: 1px solid rgba(168, 85, 247, 0.35);
   }
 
-  /* Math Banner */
+  /* Math Banner (Emerald Glow) */
   .math-banner {
     width: 100%;
-    background: #1e202c;
+    background: rgba(16, 185, 129, 0.08);
     border: none;
-    border-bottom: 1px solid #2d3042;
+    border-bottom: 1px solid rgba(16, 185, 129, 0.22);
     padding: 10px 20px;
     display: flex;
     justify-content: space-between;
@@ -437,6 +472,11 @@
     cursor: pointer;
     font: inherit;
     text-align: left;
+    transition: background 0.15s ease;
+  }
+
+  .math-banner:hover {
+    background: rgba(16, 185, 129, 0.14);
   }
 
   .math-left {
@@ -446,25 +486,17 @@
   }
 
   .math-expr {
-    color: #9ca3af;
+    color: var(--text-secondary);
     font-size: 15px;
   }
 
   .math-res {
-    color: #10b981;
+    color: var(--accent-emerald);
     font-size: 18px;
     font-weight: 700;
   }
 
-  .key-hint {
-    background: #2a2d3e;
-    color: #9ca3af;
-    font-size: 12px;
-    padding: 3px 8px;
-    border-radius: 4px;
-  }
-
-  /* Body */
+  /* Main Body */
   .beam-body {
     flex: 1;
     display: flex;
@@ -475,7 +507,7 @@
     flex: 6;
     overflow-y: auto;
     padding: 8px;
-    border-right: 1px solid #232530;
+    border-right: 1px solid var(--border-subtle);
   }
 
   .list-item {
@@ -486,19 +518,21 @@
     padding: 9px 12px;
     border-radius: 8px;
     cursor: pointer;
-    transition: background 0.12s ease;
-    border: none;
+    transition: background 0.1s ease, border-color 0.1s ease;
+    border: 1px solid transparent;
     background: transparent;
     font: inherit;
     text-align: left;
   }
 
   .list-item:hover {
-    background: #1e202a;
+    background: var(--surface-hover);
   }
 
   .list-item.selected {
-    background: #292b3a;
+    background: var(--surface-selected);
+    border-color: var(--border-selected);
+    border-left: 3px solid var(--accent-blue);
   }
 
   .item-icon-box {
@@ -520,13 +554,14 @@
   .generic-icon {
     width: 30px;
     height: 30px;
-    background: #374151;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    color: #d1d5db;
+    color: var(--text-primary);
     font-size: 14px;
   }
 
@@ -543,15 +578,30 @@
     min-width: 0;
   }
 
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .item-title {
     font-size: 14.5px;
     font-weight: 500;
-    color: #f3f4f6;
+    color: var(--text-primary);
+  }
+
+  .usage-badge {
+    font-size: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--accent-sky);
+    padding: 1px 5px;
+    border-radius: 10px;
+    font-weight: 600;
   }
 
   .item-subtitle {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--text-muted);
   }
 
   .truncate {
@@ -562,24 +612,25 @@
 
   .item-action-pill {
     font-size: 11px;
-    background: #3b82f6;
-    color: #fff;
+    background: var(--accent-blue);
+    color: #ffffff;
     padding: 3px 8px;
-    border-radius: 4px;
+    border-radius: 5px;
     font-weight: 600;
+    box-shadow: 0 2px 8px var(--accent-blue-glow);
   }
 
   .empty-state {
     padding: 40px 20px;
     text-align: center;
-    color: #6b7280;
+    color: var(--text-muted);
   }
 
   .empty-hint {
     display: block;
     margin-top: 8px;
     font-size: 12px;
-    color: #4b5563;
+    color: var(--text-muted);
   }
 
   /* Detail Panel */
@@ -587,7 +638,7 @@
     flex: 4;
     padding: 16px;
     overflow-y: auto;
-    background: #16171f;
+    background: var(--surface-card);
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -613,20 +664,20 @@
 
   .detail-app-subtitle {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--text-muted);
   }
 
   .detail-badge {
     font-size: 11px;
-    background: #2a2c3a;
-    color: #9ca3af;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
     padding: 3px 8px;
     border-radius: 12px;
   }
 
   .clip-preview-box {
-    background: #1c1d27;
-    border: 1px solid #282a39;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--surface-card-border);
     padding: 12px;
     border-radius: 8px;
     max-height: 280px;
@@ -636,28 +687,28 @@
   .clip-preview-box pre {
     white-space: pre-wrap;
     word-break: break-all;
-    font-family: monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 12.5px;
-    color: #d1d5db;
+    color: #e5e7eb;
   }
 
   .detail-specs {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
   }
 
   .spec-row {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
   }
 
   .spec-label {
     font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #4b5563;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
     font-weight: 600;
   }
 
@@ -666,20 +717,31 @@
     color: #d1d5db;
   }
 
+  .code-font {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+  }
+
   .detail-placeholder {
     height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #4b5563;
+    color: var(--text-muted);
     text-align: center;
-    gap: 6px;
+    gap: 8px;
+  }
+
+  .placeholder-icon {
+    font-size: 32px;
+    color: var(--accent-blue);
+    opacity: 0.8;
   }
 
   .detail-placeholder p {
     font-size: 15px;
-    color: #6b7280;
+    color: var(--text-primary);
     font-weight: 600;
   }
 
@@ -690,8 +752,8 @@
   /* Footer */
   .beam-footer {
     height: 38px;
-    border-top: 1px solid #232530;
-    background: #111218;
+    border-top: 1px solid var(--border-subtle);
+    background: rgba(12, 14, 18, 0.95);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -700,17 +762,24 @@
 
   .key-pill {
     font-size: 12px;
-    font-weight: 600;
-    color: #d1d5db;
+    font-weight: 500;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .footer-right {
     display: flex;
-    gap: 12px;
+    gap: 14px;
+    align-items: center;
   }
 
   .footer-hint {
     font-size: 11px;
-    color: #6b7280;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 </style>

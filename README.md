@@ -1,66 +1,86 @@
-# ⚡ Beam
+# Beam
 
-A modern, fast, and keyboard-centric launcher for Linux inspired by **Raycast**, built with **Go + Wails + Svelte**.
-
----
-
-## ✨ Features
-
-- **🚀 Application Launcher**: Instantly searches and launches installed `.desktop` apps with icon resolution.
-- **📋 Live Clipboard Manager**: Tracks your clipboard history in real-time (Wayland & X11). Type `/clip` or press `Tab` to search through copied items.
-- **🧮 Inline Math Calculator**: Evaluates arithmetic expressions directly in the search bar (e.g., `45 * 12`, `sqrt(144) + 10`, `sin(pi/2)`). Press `Enter` to copy results.
-- **🌐 Quick Web Fallback**: Seamlessly search Google, GitHub, or open URLs when no local app matches.
-- **⌨️ Keyboard-Centric Workflow**:
-  - `↑` / `↓`: Navigate items
-  - `↵ Enter`: Open app or copy result/clipboard
-  - `Tab`: Switch between modes (All / Clipboard / Apps)
-  - `Esc`: Clear search query or dismiss launcher
+A fast, keyboard-first application launcher and productivity spotlight for Linux desktops, inspired by Raycast.
 
 ---
 
-## 📂 Project Structure
+## Preview
 
-```
-beam/
-├── app.go                 # Wails app lifecycle & JS bindings
-├── main.go                # Frameless floating window configuration
-├── backend/               # Pure Go engine
-│   ├── apps.go            # Linux .desktop parser, icon finder & launcher
-│   ├── calc.go            # Safe AST math expression evaluator
-│   └── clipboard.go       # Background Wayland/X11 clipboard tracker
-└── frontend/              # Raycast-inspired Svelte UI
-    └── src/
-        ├── App.svelte     # Search, split view, keyboard handlers
-        └── style.css      # Dark glassmorphic theme
+![Beam Launcher Preview](build/appicon.png)
+
+---
+
+## User Workflow
+
+```mermaid
+flowchart TD
+    Trigger["Press Super + Space / Alt + Space"] --> Spotlight["Beam Spotlight Window"]
+    Spotlight --> Input{"User Input"}
+
+    Input -->|"App Name or Acronym (e.g. gc, code)"| Apps["Search Installed Applications"]
+    Input -->|"Math Expression (e.g. 45 * 12)"| Calc["Inline Calculation"]
+    Input -->|"Press Tab or type /clip"| Clip["Clipboard History"]
+    Input -->|"Web Query or URL"| Web["Web Search Fallback"]
+
+    Apps -->|"Enter"| Launch["Launch Application"]
+    Calc -->|"Enter"| CopyResult["Copy Result"]
+    Clip -->|"Enter"| CopyClip["Copy Snippet"]
+    Web -->|"Enter"| Browser["Open in Browser"]
+
+    Spotlight -->|"Esc"| Close["Dismiss Window"]
 ```
 
 ---
 
-## 🛠️ Build & Run
+## Quick Controls
 
-### 1. Build the Binary
+| Key | Action |
+| :--- | :--- |
+| `Typing` | Search applications, calculate math, or search the web |
+| `Up` / `Down` | Navigate results |
+| `Enter` | Launch app, copy math result, or restore clipboard item |
+| `Tab` | Switch between modes (All, Apps, Clipboard) |
+| `/clip` | Filter clipboard history directly |
+| `Esc` | Clear query or dismiss launcher |
+
+---
+
+## Installation
+
+### 1. Install Binary
+
 ```bash
-wails build -tags webkit2_41
-```
-The compiled binary will be placed at `build/bin/beam` (~9 MB).
-
-### 2. Run Directly
-```bash
-./build/bin/beam
+mkdir -p ~/.local/bin
+cp beam ~/.local/bin/beam
+chmod +x ~/.local/bin/beam
 ```
 
-### 3. Development Mode (Live Reloading)
-```bash
-wails dev -tags webkit2_41
-```
+> Note for Wayland users: install `wl-clipboard` for clipboard history support (`sudo apt install wl-clipboard` or distribution package manager).
+
+### 2. Set Global Hotkey
+
+Assign `~/.local/bin/beam` to `Super + Space` or `Alt + Space` in your desktop settings:
+
+- **GNOME**: Settings -> Keyboard -> Keyboard Shortcuts -> Custom Shortcuts -> Add shortcut for `~/.local/bin/beam`.
+- **KDE Plasma**: System Settings -> Shortcuts -> Custom Shortcuts -> Command/URL.
+- **Hyprland**: Add `bind = SUPER, SPACE, exec, ~/.local/bin/beam` to `hyprland.conf`.
+- **Sway / i3**: Add `bindsym $mod+space exec ~/.local/bin/beam` to window manager configuration.
 
 ---
 
-## 🚀 Setting a Global Hotkey (e.g., `Super + Space` or `Alt + Space`)
+## Documentation
 
-To make Beam behave like Raycast:
-1. Open **GNOME Settings** → **Keyboard** → **Keyboard Shortcuts** → **View and Customize Shortcuts** → **Custom Shortcuts**.
-2. Click **+** to add a new shortcut:
-   - **Name**: `Beam Launcher`
-   - **Command**: `/home/dilkhush/Desktop/Mine/beam/build/bin/beam`
-   - **Shortcut**: `Alt + Space` or `Super + Space`
+For developer guides, architecture specifications, and coding rules, see the [docs](docs/) directory:
+
+- [Architecture Specification](docs/architecture.md)
+- [Product & Technical Plan](docs/plan.md)
+- [Operations Guide](docs/operations.md)
+- [Design Guidelines](docs/design_guidelines.md)
+- [Engineering Rules](docs/rules.md)
+- [Milestones & Roadmap](docs/milestones.md)
+
+---
+
+## License
+
+MIT License.

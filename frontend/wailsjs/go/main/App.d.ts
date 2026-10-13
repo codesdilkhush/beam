@@ -12,10 +12,12 @@ export function GetClipboard():Promise<Array<backend.ClipboardItem>>;
 
 export function HideWindow():Promise<void>;
 
-export function LaunchApp(arg1:string,arg2:boolean):Promise<void>;
+export function LaunchApp(arg1:string,arg2:boolean,arg3:string):Promise<void>;
 
 export function LoadIconAsDataURL(arg1:string):Promise<string>;
 
 export function OpenURL(arg1:string):Promise<void>;
 
 export function QuitApp():Promise<void>;
+
+export function SearchApps(arg1:string):Promise<Array<backend.AppInfo>>;

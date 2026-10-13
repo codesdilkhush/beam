@@ -1,4 +1,4 @@
-# 🎨 Beam Design Guidelines & Visual Language
+# Beam Design Guidelines & Visual Language
 
 This document defines the visual design system, glassmorphism principles, color palette, typography, and micro-interaction specifications for **Beam**, inspired by the signature aesthetic of **Raycast**.
 
@@ -94,7 +94,7 @@ This document defines the visual design system, glassmorphism principles, color 
 * Background: `--surface-header` with `backdrop-filter: blur(16px)`
 * Magnifying glass icon: 20px, `--text-muted`
 * Search input: Full width, zero border, transparent background, auto-focused.
-* Right side contains mode badge pills (e.g. `📋 Clipboard`, `🚀 Apps`) with frosted glass background.
+* Right side contains mode badge pills (e.g., `Clipboard`, `Apps`) with frosted glass background.
 
 ### 5.2 Results List (Left 60%)
 * Padding: `8px`

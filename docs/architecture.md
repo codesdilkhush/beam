@@ -1,4 +1,4 @@
-# 🏛️ Beam Architecture Specification (Priority-Based)
+# Beam Architecture Specification (Priority-Based)
 
 ## 1. System Overview & Technology Stack
 
@@ -75,7 +75,7 @@ graph TD
 
 ## 2. Priority-Based Architecture Breakdown
 
-### 🔴 Priority 0 (P0) — Core Foundation (Operational Baseline)
+### Priority 0 (P0) — Core Foundation (Operational Baseline)
 1. **Application Manager (`backend/apps.go`)**:
    * Scans `/usr/share/applications`, `~/.local/share/applications`, and Flatpak paths.
    * Parses `.desktop` files, sanitizes `Exec` command strings, and locates SVG/PNG icons.
@@ -89,7 +89,7 @@ graph TD
 
 ---
 
-### 🟠 Priority 1 (P1) — Speed, Intelligence & Persistence
+### Priority 1 (P1) — Speed, Intelligence & Persistence
 1. **Fuzzy Search & Scoring Engine**:
    * Sub-millisecond matching across application names, comments, and executables.
    * Prefix bonuses, word-boundary scoring, and acronym matches (`gc` → Google Chrome).
@@ -101,7 +101,7 @@ graph TD
 
 ---
 
-### 🟡 Priority 2 (P2) — Extensibility & Desktop Daemon
+### Priority 2 (P2) — Extensibility & Desktop Daemon
 1. **Single-Instance IPC Daemon**:
    * Running `beam --toggle` communicates over a local UNIX domain socket to show or hide the existing window in < 10ms.
 2. **Raycast-Compatible Script Commands**:
@@ -110,7 +110,7 @@ graph TD
 
 ---
 
-### 🔵 Priority 3 (P3) — Theming & Action Palette
+### Priority 3 (P3) — Theming & Action Palette
 1. **Action Palette (`Ctrl + K`)**:
    * Modal action sheet for context-sensitive commands ("Copy Exec Path", "Reveal in Files", "Open in Terminal").
 2. **Tailwind Custom Theming**:

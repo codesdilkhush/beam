@@ -1,4 +1,4 @@
-# 🎯 Beam Project Milestones & Priority Roadmap
+# Beam Project Milestones & Priority Roadmap
 
 Below is the prioritized milestone progression for the Beam project.
 
@@ -20,7 +20,7 @@ gantt
 
 ---
 
-## 🔴 Priority 0 (P0) — Milestone 1: Core Foundation (Completed)
+## Priority 0 (P0) — Milestone 1: Core Foundation (Completed)
 * [x] **Bun + Tailwind CSS v4 Scaffolding:** Initialized fast Bun build pipeline with Svelte 5 and `@tailwindcss/vite`.
 * [x] **Frameless Spotlight Window:** Always-on-top, floating, centered dark window with Wails runtime.
 * [x] **Linux Application Scanner:** Deep scan of `.desktop` files in `/usr/share/applications` and `~/.local/share/applications`.
@@ -31,7 +31,7 @@ gantt
 
 ---
 
-## 🟠 Priority 1 (P1) — Milestone 2: Fuzzy Search & Icon Caching (Next Step)
+## Priority 1 (P1) — Milestone 2: Fuzzy Search & Icon Caching (Next Step)
 * [ ] **`fzf`-Style Fuzzy Scoring:**
   * Implement scoring algorithm rewarding exact prefix matches, word boundaries, and acronyms (`vsc` → `Visual Studio Code`).
 * [ ] **High-Speed Icon Caching:**
@@ -41,7 +41,7 @@ gantt
 
 ---
 
-## 🟠 Priority 1 (P1) — Milestone 3: Persistent SQLite Clipboard
+## Priority 1 (P1) — Milestone 3: Persistent SQLite Clipboard
 * [ ] **SQLite Database Engine:**
   * Persistent storage in `~/.local/share/beam/beam.db`.
   * SQLite FTS5 (Full-Text Search) for rapid search over thousands of historic clippings.
@@ -52,14 +52,14 @@ gantt
 
 ---
 
-## 🟡 Priority 2 (P2) — Milestone 4: Single-Instance Daemon (`beam --toggle`)
+## Priority 2 (P2) — Milestone 4: Single-Instance Daemon (`beam --toggle`)
 * [ ] **UNIX Domain Socket Daemon:**
   * Start as background daemon on user login.
   * Running `beam --toggle` signals the existing process over a local socket to show/hide the window in under 10ms.
 
 ---
 
-## 🟡 Priority 2 (P2) — Milestone 5: Raycast Script Commands
+## Priority 2 (P2) — Milestone 5: Raycast Script Commands
 * [ ] **Script Discovery:**
   * Automatically discover executable scripts in `~/.config/beam/scripts/`.
 * [ ] **Metadata Parser:**
@@ -69,7 +69,7 @@ gantt
 
 ---
 
-## 🔵 Priority 3 (P3) — Milestone 6: Action Palette & Theming
+## Priority 3 (P3) — Milestone 6: Action Palette & Theming
 * [ ] **Raycast Action Palette (`Ctrl + K`):**
   * Popover action menu with secondary options (e.g. "Copy Exec Path", "Show in Files").
 * [ ] **Tailwind Theme Switcher:**
