@@ -151,8 +151,9 @@ beam/
   - Follow the glassmorphism design system in [design_guidelines.md](design_guidelines.md) (electric blue accents, translucent dark backdrops, smooth transitions).
 - **Tailwind CSS v4 Conventions**:
   - Use native Tailwind v4 utilities. Avoid arbitrary CSS hacks or duplicate utility classes.
-- **Documentation Standards (No Emojis)**:
-  - Never use emojis in `.md` files or documentation. Keep all documentation clean, professional, and plain text.
+- **Strict Zero-Emoji Policy (Applications & Docs)**:
+  - Never use emojis anywhere in the application code, UI components, templates, or documentation files.
+  - Use vector SVGs, Lucide icons, or semantic plain text for all visual indicators and badges.
 
 ### C. Minimal & Surgical Changes
 - **No Scope Creep**: Only touch files directly related to the assigned task.
@@ -174,7 +175,7 @@ Before completing any task, agents must run:
 | **Simplicity** | Code is simple, readable, and free of over-engineering | Manual inspection |
 | **No Dead Code** | Unused functions, imports, types, and comments removed | Manual inspection |
 | **1:1 Test Files** | Every Go backend file has a corresponding `_test.go` file | Manual inspection |
-| **No Emojis in Docs** | Zero emojis across all `.md` and documentation files | Manual / regex audit |
+| **Zero Emojis** | Zero emojis in application UI, source code, and docs | Manual / regex audit |
 | **Go Format** | All Go files formatted with standard `gofmt` | `gofmt -s -w .` |
 | **Go Vet** | Zero Go compiler or static analysis warnings | `go vet ./...` |
 | **Go Tests** | Backend unit tests pass | `go test -v ./backend/...` |

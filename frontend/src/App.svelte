@@ -234,9 +234,21 @@
     />
 
     {#if isClipboardMode}
-      <span class="mode-badge clip-badge">📋 Clipboard</span>
+      <span class="mode-badge clip-badge">
+        <svg class="badge-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+        </svg>
+        Clipboard
+      </span>
     {:else if activeTab === 'apps'}
-      <span class="mode-badge app-badge">🚀 Apps</span>
+      <span class="mode-badge app-badge">
+        <svg class="badge-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polygon points="10 8 16 12 10 16 10 8"></polygon>
+        </svg>
+        Applications
+      </span>
     {/if}
   </header>
 
@@ -244,7 +256,16 @@
   {#if mathResult && mathResult.success && !isClipboardMode}
     <button type="button" class="math-banner" onclick={() => CopyToClipboard(mathResult?.result || '')}>
       <div class="math-left">
-        <span class="math-icon">🧮</span>
+        <span class="math-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+            <line x1="8" y1="6" x2="16" y2="6"></line>
+            <line x1="16" y1="14" x2="16" y2="18"></line>
+            <path d="M16 10h.01"></path>
+            <path d="M12 10h.01"></path>
+            <path d="M8 10h.01"></path>
+          </svg>
+        </span>
         <span class="math-expr">{mathResult.expression} =</span>
         <span class="math-res">{mathResult.result}</span>
       </div>
@@ -276,7 +297,10 @@
               <!-- Clipboard Entry -->
               {@const clip = item as ClipboardEntry}
               <div class="item-icon-box clip-icon">
-                <span>📋</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                </svg>
               </div>
               <div class="item-info">
                 <span class="item-title truncate">{clip.preview}</span>
@@ -301,7 +325,7 @@
                 <div class="title-row">
                   <span class="item-title">{app.name}</span>
                   {#if app.launchCount > 0}
-                    <span class="usage-badge" title="Launched {app.launchCount} times">★ {app.launchCount}</span>
+                    <span class="usage-badge" title="Launched {app.launchCount} times">{app.launchCount} runs</span>
                   {/if}
                 </div>
                 <span class="item-subtitle truncate">{app.comment || app.exec}</span>
@@ -364,7 +388,11 @@
         </div>
       {:else}
         <div class="detail-placeholder">
-          <div class="placeholder-icon">⚡</div>
+          <div class="placeholder-icon">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+          </div>
           <p>Beam Launcher</p>
           <span>Raycast-grade speed on Linux</span>
         </div>
@@ -440,6 +468,9 @@
   }
 
   .mode-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 12px;
     padding: 4px 10px;
     border-radius: 20px;
