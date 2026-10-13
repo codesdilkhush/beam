@@ -5,6 +5,7 @@
     isClipboardMode: boolean;
     isTodoMode: boolean;
     isEmojiMode: boolean;
+    isGuideMode: boolean;
     selectedApp: AppItem | null;
     selectedTodo: TodoEntry | null;
     selectedEmoji: EmojiEntry | null;
@@ -15,6 +16,7 @@
     isClipboardMode,
     isTodoMode,
     isEmojiMode,
+    isGuideMode,
     selectedApp,
     selectedTodo,
     selectedEmoji,
@@ -24,7 +26,11 @@
 
 <footer class="footer">
   <div class="footer-left">
-    {#if convertResult && convertResult.success}
+    {#if isGuideMode}
+      <span class="active-action">
+        <kbd>↑</kbd><kbd>↓</kbd> Browse Topics
+      </span>
+    {:else if convertResult && convertResult.success}
       <span class="active-action">
         <kbd>↵</kbd> Copy Conversion Result
       </span>

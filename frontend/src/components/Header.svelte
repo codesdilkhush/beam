@@ -6,6 +6,7 @@
     isClipboardMode: boolean;
     isTodoMode: boolean;
     isEmojiMode: boolean;
+    isGuideMode: boolean;
     activeTab: TabType;
     onQueryChange: (q: string) => void;
     inputElement?: HTMLInputElement | null;
@@ -16,12 +17,14 @@
     isClipboardMode,
     isTodoMode,
     isEmojiMode,
+    isGuideMode,
     activeTab,
     onQueryChange,
     inputElement = $bindable(null)
   }: Props = $props();
 
   const placeholderText = $derived.by(() => {
+    if (isGuideMode) return "Search user guide...";
     if (isClipboardMode) return "Search clipboard...";
     if (isTodoMode) return "Search or add task...";
     if (isEmojiMode) return "Search emojis...";
@@ -48,7 +51,15 @@
     autocomplete="off"
   />
 
-  {#if isClipboardMode}
+  {#if isGuideMode}
+    <span class="mode-badge">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+      </svg>
+      User Guide
+    </span>
+  {:else if isClipboardMode}
     <span class="mode-badge">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>

@@ -16,7 +16,9 @@
     ClearCompletedTodos,
     GetEmojis,
     SearchEmojis,
-    ConvertQuery
+    ConvertQuery,
+    GetGuideTopics,
+    SearchGuideTopics
   } from '../wailsjs/go/main/App.js';
 
   import type {
@@ -26,6 +28,7 @@
     TodoEntry,
     EmojiEntry,
     ConvertItem,
+    GuideTopic,
     ActionOption,
     ThemeType,
     TabType
@@ -37,6 +40,7 @@
   import MathBanner from './components/MathBanner.svelte';
   import ResultsList from './components/ResultsList.svelte';
   import EmojiGrid from './components/EmojiGrid.svelte';
+  import UserGuide from './components/UserGuide.svelte';
   import DetailPanel from './components/DetailPanel.svelte';
   import ActionPalette from './components/ActionPalette.svelte';
   import Footer from './components/Footer.svelte';
@@ -52,6 +56,8 @@
   let clipboardItems = $state<ClipboardEntry[]>([]);
   let todoItems = $state<TodoEntry[]>([]);
   let emojiItems = $state<EmojiEntry[]>([]);
+  let guideTopics = $state<GuideTopic[]>([]);
+  let guideIndex = $state(0);
   let mathResult = $state<CalcItem | null>(null);
   let convertResult = $state<ConvertItem | null>(null);
 
@@ -65,6 +71,15 @@
       const selector = isEmojiMode ? '.emoji-tile' : '.list-item';
       requestAnimationFrame(() => {
         scrollSelectedIntoView(resultsListRef, selector, idx);
+      });
+    }
+  });
+
+  $effect(() => {
+    const idx = guideIndex;
+    if (isGuideMode && resultsListRef) {
+      requestAnimationFrame(() => {
+        scrollSelectedIntoView(resultsListRef, '.topic-item', idx);
       });
     }
   });
@@ -88,6 +103,7 @@
     await refreshClipboard();
     await refreshTodos();
     await performEmojiSearch('');
+    await refreshGuide('');
     if (searchInputRef) {
       searchInputRef.focus();
     }
@@ -143,6 +159,15 @@
     }
   }
 
+  async function refreshGuide(q: string = '') {
+    try {
+      const list = q ? await SearchGuideTopics(q) : await GetGuideTopics();
+      guideTopics = list || [];
+    } catch {
+      guideTopics = [];
+    }
+  }
+
   const isClipboardMode = $derived(
     activeTab === 'clipboard' || searchQuery.startsWith('/clip')
   );
@@ -153,6 +178,13 @@
 
   const isEmojiMode = $derived(
     activeTab === 'emoji' || searchQuery.startsWith('/emoji') || searchQuery.startsWith('/e ') || searchQuery.startsWith(':')
+  );
+
+  const isGuideMode = $derived(
+    activeTab === 'guide' ||
+      searchQuery.startsWith('/guide') ||
+      searchQuery.startsWith('/help') ||
+      searchQuery.startsWith('/?')
   );
 
   function getCleanTodoQuery(query: string): string {
@@ -172,9 +204,20 @@
     return '';
   }
 
+  function getCleanGuideQuery(query: string): string {
+    if (query.startsWith('/guide ')) return query.slice(7).trim();
+    if (query.startsWith('/guide')) return query.slice(6).trim();
+    if (query.startsWith('/help ')) return query.slice(6).trim();
+    if (query.startsWith('/help')) return query.slice(5).trim();
+    if (query.startsWith('/? ')) return query.slice(3).trim();
+    if (query.startsWith('/?')) return query.slice(2).trim();
+    if (activeTab === 'guide') return query.trim();
+    return '';
+  }
+
   $effect(() => {
     const q = searchQuery;
-    if (!isClipboardMode && !isTodoMode && !isEmojiMode) {
+    if (!isClipboardMode && !isTodoMode && !isEmojiMode && !isGuideMode) {
       performAppSearch(q);
     }
     selectedIndex = 0;
@@ -184,6 +227,13 @@
     if (isEmojiMode) {
       const q = getCleanEmojiQuery(searchQuery);
       performEmojiSearch(q);
+    }
+  });
+
+  $effect(() => {
+    if (isGuideMode) {
+      const q = getCleanGuideQuery(searchQuery);
+      refreshGuide(q);
     }
   });
 
@@ -201,7 +251,7 @@
 
   $effect(() => {
     const q = searchQuery.trim();
-    if (isClipboardMode || isTodoMode || isEmojiMode || q.length < 2) {
+    if (isClipboardMode || isTodoMode || isEmojiMode || isGuideMode || q.length < 2) {
       convertResult = null;
       mathResult = null;
       return;
@@ -284,7 +334,7 @@
   });
 
   const selectedApp = $derived.by(() => {
-    if (!isClipboardMode && !isTodoMode && !isEmojiMode && displayItems.length > 0 && selectedIndex < displayItems.length) {
+    if (!isClipboardMode && !isTodoMode && !isEmojiMode && !isGuideMode && displayItems.length > 0 && selectedIndex < displayItems.length) {
       return displayItems[selectedIndex] as AppItem;
     }
     return null;
@@ -407,6 +457,19 @@
       });
     }
 
+    // In-App User Guide action
+    list.push({
+      id: 'open-guide',
+      label: 'Open In-App User Guide',
+      shortcut: '?',
+      run: () => {
+        activeTab = 'guide';
+        searchQuery = '';
+        guideIndex = 0;
+        refreshGuide('');
+      }
+    });
+
     // Universal theme actions
     list.push({
       id: 'theme-default',
@@ -474,6 +537,34 @@
         showActionPalette = false;
       }
       return;
+    }
+
+    if (isGuideMode) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (guideIndex < guideTopics.length - 1) guideIndex++;
+        return;
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (guideIndex > 0) guideIndex--;
+        return;
+      } else if (e.key === 'PageDown') {
+        e.preventDefault();
+        guideIndex = Math.min(guideTopics.length - 1, guideIndex + 4);
+        return;
+      } else if (e.key === 'PageUp') {
+        e.preventDefault();
+        guideIndex = Math.max(0, guideIndex - 4);
+        return;
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        guideIndex = 0;
+        return;
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        if (guideTopics.length > 0) guideIndex = guideTopics.length - 1;
+        return;
+      }
     }
 
     if (isTodoMode && selectedTodo && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
@@ -597,17 +688,26 @@
       if (activeTab === 'all') activeTab = 'clipboard';
       else if (activeTab === 'clipboard') activeTab = 'todo';
       else if (activeTab === 'todo') activeTab = 'emoji';
-      else if (activeTab === 'emoji') activeTab = 'apps';
+      else if (activeTab === 'emoji') activeTab = 'guide';
+      else if (activeTab === 'guide') activeTab = 'apps';
       else activeTab = 'all';
 
       selectedIndex = 0;
       if (activeTab === 'clipboard') refreshClipboard();
       else if (activeTab === 'todo') refreshTodos();
       else if (activeTab === 'emoji') performEmojiSearch('');
+      else if (activeTab === 'guide') {
+        refreshGuide('');
+        guideIndex = 0;
+      }
     }
   }
 
   async function executeCurrentSelection() {
+    if (isGuideMode) {
+      return;
+    }
+
     if (convertResult && convertResult.success && !isClipboardMode && !isTodoMode && !isEmojiMode) {
       await CopyToClipboard(convertResult.result);
       return;
@@ -667,12 +767,13 @@
     {isClipboardMode}
     {isTodoMode}
     {isEmojiMode}
+    {isGuideMode}
     {activeTab}
     bind:inputElement={searchInputRef}
     onQueryChange={(q) => (searchQuery = q)}
   />
 
-  {#if !isClipboardMode && !isTodoMode && !isEmojiMode}
+  {#if !isClipboardMode && !isTodoMode && !isEmojiMode && !isGuideMode}
     <MathBanner
       {mathResult}
       {convertResult}
@@ -681,7 +782,16 @@
   {/if}
 
   <div class="beam-body">
-    {#if isEmojiMode}
+    {#if isGuideMode}
+      <UserGuide
+        topics={guideTopics}
+        selectedIndex={guideIndex}
+        searchQuery={getCleanGuideQuery(searchQuery)}
+        bind:listElement={resultsListRef}
+        onSelect={(idx) => (guideIndex = idx)}
+        onHover={(idx) => (guideIndex = idx)}
+      />
+    {:else if isEmojiMode}
       <EmojiGrid
         items={emojiItems}
         {selectedIndex}
@@ -703,7 +813,7 @@
       />
     {/if}
 
-    {#if !isTodoMode && !isEmojiMode}
+    {#if !isTodoMode && !isEmojiMode && !isGuideMode}
       <DetailPanel
         {isClipboardMode}
         {isEmojiMode}
@@ -731,6 +841,7 @@
     {isClipboardMode}
     {isTodoMode}
     {isEmojiMode}
+    {isGuideMode}
     {selectedApp}
     {selectedTodo}
     {selectedEmoji}

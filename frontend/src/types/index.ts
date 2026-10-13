@@ -54,6 +54,21 @@ export interface ConvertItem {
   formatted: string;
 }
 
+export interface GuideShortcut {
+  key: string;
+  desc: string;
+}
+
+export interface GuideTopic {
+  id: string;
+  title: string;
+  category: string;
+  summary: string;
+  content: string[];
+  shortcuts: GuideShortcut[];
+  examples: string[];
+}
+
 export interface ActionOption {
   id: string;
   label: string;
@@ -63,5 +78,6 @@ export interface ActionOption {
 
 export type ThemeType = 'default' | 'theme-catppuccin' | 'theme-tokyo' | 'theme-nord';
 
-export type TabType = 'all' | 'apps' | 'clipboard' | 'todo' | 'emoji';
+export type TabType = 'all' | 'apps' | 'clipboard' | 'todo' | 'emoji' | 'guide';
+
 

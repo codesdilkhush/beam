@@ -18,6 +18,8 @@ gantt
     M6 - Action Palette (Ctrl+K) & Custom Themes        :done, m6, 2026-10-14, 2026-10-14
     section P4: Productivity Tools
     M7 - To-Do List, Emoji Picker & Universal Converter :done, m7, 2026-10-14, 2026-10-14
+    section P5: Documentation & Onboarding
+    M8 - In-App User Guide & Comprehensive Manual       :done, m8, 2026-10-14, 2026-10-14
 ```
 
 ---
@@ -101,4 +103,29 @@ gantt
     * **CSS Units:** `px` to `rem` and `rem` to `px` conversions.
   * Dynamic result banner preview with instant one-key copy (`Enter`).
   * 1:1 unit test suite (`backend/convert_test.go`).
+
+---
+
+## Priority 5 (P5) — Milestone 8: In-App User Guide & Comprehensive Documentation (Completed)
+* [x] **Interactive In-App User Guide (`/guide`, `/help`, `/?`):**
+  * Built-in split-pane browser inside Beam spotlight (category sidebar + formatted content viewer).
+  * 10 core topics: Getting Started, App Launcher, Clipboard History, To-Do Tasks, Emoji Grid, Universal Converter, Action Palette, Themes, Custom Scripts, and Master Keyboard Shortcuts.
+  * Direct click-to-copy for all example syntax and queries with temporary visual feedback.
+  * Dedicated Go subsystem (`backend/guide.go`) and 1:1 unit test suite (`backend/guide_test.go`).
+  * Accessible via `/guide`, `/help`, `/?`, `Tab` mode cycling, or `Ctrl+K` Action Palette.
+* [x] **Complete End-User Guide & Manual (`docs/user_guide.md`):**
+  * Architectural overview and core philosophy (Go, Wails v2, Svelte 5 Runes, sub-millisecond IPC).
+  * System prerequisites, setup, build instructions (Bun + Go + Wails), and systemd daemon configuration.
+  * Window manager & desktop environment hotkey bindings (GNOME, KDE, Hyprland, Sway, i3).
+  * Feature-by-feature operational guides:
+    * Application Launcher with fuzzy search, acronym matching, and launch frequency boosting.
+    * Persistent SQLite Clipboard Manager (`/clip`) with live Wayland sync and instant paste.
+    * SQLite-backed Task Manager (`/todo`) with inline quick-add, spacebar toggle, and keyboard deletion.
+    * Raycast-style 8-Column Emoji Picker (`/emoji`) with 2D grid navigation and shortcode filtering.
+    * Universal "Convert Anything" Engine (units, currencies, colors, epoch time, and natural calendar queries).
+    * Raycast Action Palette (`Ctrl+K`) and Custom Glassmorphic Themes (`T1`–`T4`).
+    * Extensible Script Commands engine (`~/.config/beam/scripts/`).
+    * Interactive In-App User Guide (`/guide`, `/help`, `/?`).
+  * Master keyboard shortcuts reference table.
+  * Directory layout and troubleshooting FAQ.
 

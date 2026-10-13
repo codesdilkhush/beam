@@ -22,6 +22,8 @@ export function GetClipboard():Promise<Array<backend.ClipboardItem>>;
 
 export function GetEmojis():Promise<Array<backend.EmojiItem>>;
 
+export function GetGuideTopics():Promise<Array<backend.GuideTopic>>;
+
 export function GetScripts():Promise<Array<backend.ScriptCommand>>;
 
 export function GetTodos():Promise<Array<backend.TodoItem>>;
@@ -39,5 +41,7 @@ export function QuitApp():Promise<void>;
 export function SearchApps(arg1:string):Promise<Array<backend.AppInfo>>;
 
 export function SearchEmojis(arg1:string):Promise<Array<backend.EmojiItem>>;
+
+export function SearchGuideTopics(arg1:string):Promise<Array<backend.GuideTopic>>;
 
 export function ToggleTodo(arg1:string):Promise<void>;

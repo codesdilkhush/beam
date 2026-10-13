@@ -15,6 +15,7 @@ Beam delivers the **Raycast experience on Linux** through a tiered, priority-dri
 | **P2 (Medium)** | Extensibility & Daemon | • UNIX socket single-instance daemon (`beam --toggle`)<br>• Raycast-compatible script commands<br>• Image/screenshot clipboard storage | < 5ms (toggle) |
 | **P3 (Enhancement)**| Customization & Polish | • `Ctrl+K` action palette<br>• Community themes (Catppuccin, Tokyo Night)<br>• Preferences configuration UI | Instant |
 | **P4 (Productivity)**| Power Tools | • SQLite To-Do & Task Manager (`/todo`)<br>• Emoji & Symbol Picker (`/emoji`)<br>• Universal "Convert Anything" engine | < 10ms |
+| **P5 (Documentation)**| Knowledge & Onboarding | • Comprehensive User Guide (`docs/user_guide.md`)<br>• Setup & Desktop Shortcut guides<br>• Command & Shortcut cheatsheets | N/A |
 
 ---
 
@@ -61,6 +62,14 @@ Beam delivers the **Raycast experience on Linux** through a tiered, priority-dri
   * **To-Do Task Manager (`/todo`):** Quick-entry checklist persisted in SQLite, spacebar toggling, completion tracking.
   * **Emoji & Symbol Picker (`/emoji`):** Instant search of Unicode characters with descriptions and shortcodes, copying or typing on Enter.
   * **Universal "Convert Anything" Engine:** Real-time multi-unit, currency, color, time, and CSS conversions with one-click copy.
+
+### P5: In-App User Guide & Comprehensive Documentation
+* **Goal:** Zero-friction user onboarding, in-app interactive reference, configuration clarity, and workflow documentation.
+* **Requirements:**
+  * Interactive In-App User Guide (`/guide`, `/help`, `/?`) with split-pane topic browser, syntax examples, and click-to-copy.
+  * Complete user guide manual (`docs/user_guide.md`) covering architecture, setup, hotkeys, and features.
+  * Desktop environment integration recipes (GNOME, KDE, Hyprland, Sway, i3).
+  * Master keyboard cheat sheet and natural-language query examples.
 
 ---
 

@@ -171,3 +171,13 @@ func (a *App) SearchEmojis(query string) []backend.EmojiItem {
 func (a *App) ConvertQuery(query string) backend.ConvertResult {
 	return backend.Convert(query)
 }
+
+// GetGuideTopics returns the comprehensive in-app user guide catalog
+func (a *App) GetGuideTopics() []backend.GuideTopic {
+	return backend.GetGuideTopics()
+}
+
+// SearchGuideTopics filters user guide topics by keyword
+func (a *App) SearchGuideTopics(query string) []backend.GuideTopic {
+	return backend.SearchGuideTopics(query)
+}

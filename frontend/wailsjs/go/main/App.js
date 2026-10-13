@@ -42,6 +42,10 @@ export function GetEmojis() {
   return window['go']['main']['App']['GetEmojis']();
 }
 
+export function GetGuideTopics() {
+  return window['go']['main']['App']['GetGuideTopics']();
+}
+
 export function GetScripts() {
   return window['go']['main']['App']['GetScripts']();
 }
@@ -76,6 +80,10 @@ export function SearchApps(arg1) {
 
 export function SearchEmojis(arg1) {
   return window['go']['main']['App']['SearchEmojis'](arg1);
+}
+
+export function SearchGuideTopics(arg1) {
+  return window['go']['main']['App']['SearchGuideTopics'](arg1);
 }
 
 export function ToggleTodo(arg1) {
