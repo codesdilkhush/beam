@@ -100,12 +100,14 @@ func TestClipboardManager_SQLitePersistence(t *testing.T) {
 	cm.AddItem("Persistent Note 2")
 
 	// Allow goroutine persist to write
-	time.Sleep(50 * time.Millisecond)
-
 	var count int
-	if err := db.QueryRow("SELECT COUNT(*) FROM clipboard_history").Scan(&count); err != nil {
-		t.Fatalf("failed to query count: %v", err)
+	for i := 0; i < 20; i++ {
+		time.Sleep(20 * time.Millisecond)
+		if err := db.QueryRow("SELECT COUNT(*) FROM clipboard_history").Scan(&count); err == nil && count == 2 {
+			break
+		}
 	}
+
 	if count != 2 {
 		t.Errorf("expected 2 rows in sqlite, got %d", count)
 	}

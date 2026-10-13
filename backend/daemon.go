@@ -11,10 +11,6 @@ import (
 	"time"
 )
 
-type DaemonManager struct {
-	sockPath string
-}
-
 func GetSocketPath() string {
 	dir, err := os.UserHomeDir()
 	if err != nil {
@@ -32,7 +28,9 @@ func TrySignalExistingInstance(sockPath string) bool {
 	conn, err := net.DialTimeout("unix", sockPath, 200*time.Millisecond)
 	if err != nil {
 		// Clean up stale socket file if it exists but no process is listening
-		_ = os.Remove(sockPath)
+		if rmErr := os.Remove(sockPath); rmErr != nil && !os.IsNotExist(rmErr) {
+			return false
+		}
 		return false
 	}
 	defer conn.Close()
@@ -45,7 +43,9 @@ func TrySignalExistingInstance(sockPath string) bool {
 
 // StartDaemonServer listens for socket commands like toggle, show, hide
 func StartDaemonServer(ctx context.Context, sockPath string, onCommand func(cmd string)) error {
-	_ = os.Remove(sockPath)
+	if rmErr := os.Remove(sockPath); rmErr != nil && !os.IsNotExist(rmErr) {
+		return fmt.Errorf("failed to clear existing socket: %w", rmErr)
+	}
 
 	listener, err := net.Listen("unix", sockPath)
 	if err != nil {
@@ -54,8 +54,12 @@ func StartDaemonServer(ctx context.Context, sockPath string, onCommand func(cmd 
 
 	go func() {
 		<-ctx.Done()
-		_ = listener.Close()
-		_ = os.Remove(sockPath)
+		if closeErr := listener.Close(); closeErr != nil {
+			return
+		}
+		if rmErr := os.Remove(sockPath); rmErr != nil && !os.IsNotExist(rmErr) {
+			return
+		}
 	}()
 
 	go func() {
@@ -85,5 +89,8 @@ func handleConnection(conn net.Conn, onCommand func(cmd string)) {
 		if onCommand != nil && cmd != "" {
 			onCommand(cmd)
 		}
+	}
+	if err := scanner.Err(); err != nil {
+		return
 	}
 }

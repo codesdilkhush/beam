@@ -27,7 +27,9 @@ func GetScriptsDirectory() string {
 		dir = "."
 	}
 	scriptsDir := filepath.Join(dir, ".config/beam/scripts")
-	_ = os.MkdirAll(scriptsDir, 0755)
+	if mkErr := os.MkdirAll(scriptsDir, 0755); mkErr != nil {
+		return scriptsDir
+	}
 	return scriptsDir
 }
 
@@ -95,6 +97,10 @@ func ParseScriptHeader(path string) (ScriptCommand, error) {
 				cmd.Author = val
 			}
 		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return ScriptCommand{}, fmt.Errorf("scanner error reading script header: %w", err)
 	}
 
 	if cmd.Title == "" {

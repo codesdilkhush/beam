@@ -230,6 +230,10 @@ func parseDesktopFile(path string) (AppInfo, error) {
 		}
 	}
 
+	if err := scanner.Err(); err != nil {
+		return AppInfo{}, fmt.Errorf("scanner error reading desktop file: %w", err)
+	}
+
 	return app, nil
 }
 

@@ -35,7 +35,7 @@ func (a *App) startup(ctx context.Context) {
 
 	// Start single-instance socket daemon
 	sockPath := backend.GetSocketPath()
-	_ = backend.StartDaemonServer(ctx, sockPath, func(cmd string) {
+	if err := backend.StartDaemonServer(ctx, sockPath, func(cmd string) {
 		if cmd == "toggle" {
 			if a.isVisible {
 				runtime.WindowHide(a.ctx)
@@ -53,7 +53,9 @@ func (a *App) startup(ctx context.Context) {
 			runtime.WindowHide(a.ctx)
 			a.isVisible = false
 		}
-	})
+	}); err != nil {
+		runtime.LogErrorf(ctx, "daemon server failed: %s", err.Error())
+	}
 }
 
 // GetApplications returns all detected Linux desktop applications

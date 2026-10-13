@@ -73,8 +73,10 @@ func (cm *ClipboardManager) initDatabase() {
 	if cm.db == nil {
 		return
 	}
+	cm.db.SetMaxOpenConns(1)
 
 	query := `
+	PRAGMA busy_timeout = 5000;
 	CREATE TABLE IF NOT EXISTS clipboard_history (
 		id TEXT PRIMARY KEY,
 		content TEXT NOT NULL,
@@ -84,7 +86,9 @@ func (cm *ClipboardManager) initDatabase() {
 	);
 	CREATE INDEX IF NOT EXISTS idx_clipboard_created ON clipboard_history(created_at DESC);
 	`
-	_, _ = cm.db.Exec(query)
+	if _, err := cm.db.Exec(query); err != nil {
+		return
+	}
 }
 
 func (cm *ClipboardManager) loadHistoryFromDB() {
@@ -104,6 +108,9 @@ func (cm *ClipboardManager) loadHistoryFromDB() {
 		if scanErr := rows.Scan(&item.ID, &item.Content, &item.Preview, &item.CharCount, &item.Timestamp); scanErr == nil {
 			loaded = append(loaded, item)
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return
 	}
 
 	cm.mu.Lock()
@@ -178,11 +185,15 @@ func (cm *ClipboardManager) AddItem(content string) {
 			VALUES (?, ?, ?, ?, ?)
 			ON CONFLICT(id) DO UPDATE SET created_at = excluded.created_at;
 			`
-			_, _ = cm.db.Exec(stmt, it.ID, it.Content, it.Preview, it.CharCount, it.Timestamp)
+			if _, insertErr := cm.db.Exec(stmt, it.ID, it.Content, it.Preview, it.CharCount, it.Timestamp); insertErr != nil {
+				return
+			}
 
 			// Prune excess
 			prune := `DELETE FROM clipboard_history WHERE id NOT IN (SELECT id FROM clipboard_history ORDER BY created_at DESC LIMIT 500);`
-			_, _ = cm.db.Exec(prune)
+			if _, pruneErr := cm.db.Exec(prune); pruneErr != nil {
+				return
+			}
 		}(item)
 	}
 }

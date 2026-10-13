@@ -92,8 +92,8 @@
           });
         }
       }
-    } catch (e) {
-      console.error('Failed to search apps:', e);
+    } catch {
+      searchResults = [];
     }
   }
 
@@ -101,8 +101,8 @@
     try {
       const clips = await GetClipboard();
       clipboardItems = clips || [];
-    } catch (e) {
-      console.error('Failed to load clipboard:', e);
+    } catch {
+      clipboardItems = [];
     }
   }
 
