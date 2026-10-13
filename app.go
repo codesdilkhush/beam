@@ -44,17 +44,25 @@ func (a *App) startup(ctx context.Context) {
 				runtime.WindowShow(a.ctx)
 				runtime.WindowCenter(a.ctx)
 				a.isVisible = true
+				go a.syncClipboard()
 			}
 		} else if cmd == "show" {
 			runtime.WindowShow(a.ctx)
 			runtime.WindowCenter(a.ctx)
 			a.isVisible = true
+			go a.syncClipboard()
 		} else if cmd == "hide" {
 			runtime.WindowHide(a.ctx)
 			a.isVisible = false
 		}
 	}); err != nil {
 		runtime.LogErrorf(ctx, "daemon server failed: %s", err.Error())
+	}
+}
+
+func (a *App) syncClipboard() {
+	if current, err := backend.ReadCurrentClipboard(); err == nil && current != "" {
+		a.clipboard.AddItem(current)
 	}
 }
 
@@ -80,6 +88,7 @@ func (a *App) LaunchApp(execCmd string, terminal bool, appID string) error {
 
 // GetClipboard returns clipboard history
 func (a *App) GetClipboard() []backend.ClipboardItem {
+	a.syncClipboard()
 	return a.clipboard.GetHistory()
 }
 

@@ -145,26 +145,10 @@ func (cm *ClipboardManager) loadHistoryFromDB() {
 }
 
 func (cm *ClipboardManager) StartWatcher(ctx context.Context) {
-	go func() {
-		ticker := time.NewTicker(500 * time.Millisecond)
-		defer ticker.Stop()
-
-		var lastContent string
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				current, err := ReadCurrentClipboard()
-				if err != nil || current == "" || current == lastContent {
-					continue
-				}
-				lastContent = current
-				cm.AddItem(current)
-			}
-		}
-	}()
+	// Background polling of wl-paste on Wayland without window focus is intentionally disabled:
+	// it creates compositor race conditions, destroys the active selection owner ("on/off" bug),
+	// and floods GNOME Mutter with stack assertion failures.
+	// Clipboard capture is handled on-demand when Beam is summoned or history queried.
 }
 
 func (cm *ClipboardManager) AddItem(content string) {
@@ -261,6 +245,15 @@ func ReadCurrentClipboard() (string, error) {
 		cmd := exec.Command(path, "-t", "text/plain", "--no-newline")
 		var out bytes.Buffer
 		cmd.Stdout = &out
+		if runErr := cmd.Run(); runErr == nil {
+			if isTextContent(out.Bytes()) {
+				return out.String(), nil
+			}
+		}
+
+		// Fallback without explicit MIME filter for applications exposing standard UTF-8 text
+		cmd = exec.Command(path, "--no-newline")
+		out.Reset()
 		if runErr := cmd.Run(); runErr == nil {
 			if isTextContent(out.Bytes()) {
 				return out.String(), nil
