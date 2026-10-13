@@ -226,7 +226,7 @@
 
   <!-- Math Inline Banner if active -->
   {#if mathResult && mathResult.success && !isClipboardMode}
-    <div class="math-banner" onclick={() => CopyToClipboard(mathResult?.result || '')}>
+    <button type="button" class="math-banner" onclick={() => CopyToClipboard(mathResult?.result || '')}>
       <div class="math-left">
         <span class="math-icon">🧮</span>
         <span class="math-expr">{mathResult.expression} =</span>
@@ -235,7 +235,7 @@
       <div class="math-right">
         <span class="key-hint">↵ Copy Result</span>
       </div>
-    </div>
+    </button>
   {/if}
 
   <!-- Split Main Body: Results List + Detail Pane -->
@@ -250,7 +250,8 @@
       {:else}
         {#each displayItems as item, idx}
           {@const isSelected = idx === selectedIndex}
-          <div
+          <button
+            type="button"
             class="list-item {isSelected ? 'selected' : ''}"
             onclick={() => selectItem(idx)}
             onmouseenter={() => (selectedIndex = idx)}
@@ -286,7 +287,7 @@
                 <span class="item-action-pill">↵ Open</span>
               {/if}
             {/if}
-          </div>
+          </button>
         {/each}
       {/if}
     </div>
@@ -425,13 +426,17 @@
 
   /* Math Banner */
   .math-banner {
+    width: 100%;
     background: #1e202c;
+    border: none;
     border-bottom: 1px solid #2d3042;
     padding: 10px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
+    font: inherit;
+    text-align: left;
   }
 
   .math-left {
@@ -474,6 +479,7 @@
   }
 
   .list-item {
+    width: 100%;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -481,6 +487,10 @@
     border-radius: 8px;
     cursor: pointer;
     transition: background 0.12s ease;
+    border: none;
+    background: transparent;
+    font: inherit;
+    text-align: left;
   }
 
   .list-item:hover {

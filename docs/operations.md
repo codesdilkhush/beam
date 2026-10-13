@@ -1,106 +1,98 @@
-# ⚙️ Beam Operations & Developer Guide
+# ⚙️ Beam Operations & Developer Guide (Bun & Tailwind CSS)
 
 ## 1. System Requirements & Dependencies
 
 ### Arch Linux
 ```bash
-sudo pacman -S go nodejs npm pkgconf gtk3 webkit2gtk-4.1 wl-clipboard
+sudo pacman -S go bun pkgconf gtk3 webkit2gtk-4.1 wl-clipboard
 ```
 
 ### Ubuntu / Debian (22.04+)
 ```bash
+# Install Bun
+curl -fsSL https://bun.sh/install | bash
+
+# Install system dependencies
 sudo apt update
-sudo apt install golang-go nodejs npm pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev wl-clipboard xclip
+sudo apt install golang-go pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev wl-clipboard xclip
 ```
 
 ### Fedora
 ```bash
-sudo dnf install golang nodejs npm pkgconf-pkg-config gtk3-devel webkit2gtk4.1-devel wl-clipboard
+curl -fsSL https://bun.sh/install | bash
+sudo dnf install golang pkgconf-pkg-config gtk3-devel webkit2gtk4.1-devel wl-clipboard
 ```
 
 ---
 
-## 2. Local Development
+## 2. Local Development Workflow (Bun-Powered)
 
-### First-Time Project Setup
+Beam uses **Bun** as its package manager and frontend build runner.
+
+### Initializing Frontend Dependencies
 ```bash
-cd /home/dilkhush/Desktop/Mine/beam
-cd frontend && npm install && cd ..
+cd /home/dilkhush/Desktop/Mine/beam/frontend
+bun install
 ```
 
-### Running with Live Reload
-Run Wails development server. Any changes to Go backend files will trigger a background rebuild, and Svelte frontend changes reload instantly via Vite HMR:
+### Running with Hot Reload (Wails Dev)
+Wails monitors both the Go backend and Svelte frontend. Changes to `.go` files trigger background rebuilds, while Svelte and Tailwind CSS changes update instantly via Vite HMR:
+
 ```bash
+cd /home/dilkhush/Desktop/Mine/beam
 wails dev -tags webkit2_41
 ```
 
+### Frontend-Only Development (Browser Mode)
+To work strictly on UI layouts with fast browser refresh:
+```bash
+cd /home/dilkhush/Desktop/Mine/beam/frontend
+bun run dev
+```
+
 ---
 
-## 3. Production Build & Optimization
+## 3. Tailwind CSS v4 Configuration
 
-To produce a production-ready, stripped standalone binary:
+Tailwind CSS v4 is integrated directly via `@tailwindcss/vite` in `frontend/vite.config.ts`:
+
+```typescript
+import { defineConfig } from 'vite'
+import { svelte } from '@sveltejs/vite-plugin-svelte'
+import tailwindcss from '@tailwindcss/vite'
+
+export default defineConfig({
+  plugins: [
+    svelte(),
+    tailwindcss(),
+  ],
+})
+```
+
+And imported at the root of `frontend/src/style.css`:
+```css
+@import "tailwindcss";
+```
+
+---
+
+## 4. Production Build & Optimization
+
+To compile the final standalone native binary:
 
 ```bash
-# Optimized build with stripped debug symbols
+cd /home/dilkhush/Desktop/Mine/beam
 wails build -tags webkit2_41 -ldflags="-s -w"
 ```
 
-The compiled binary will be generated at:
-```bash
-build/bin/beam
-```
-
-Verify binary size and libraries:
-```bash
-ls -lh build/bin/beam
-ldd build/bin/beam | grep -E "webkit|gtk"
-```
+The resulting binary will be output to `build/bin/beam` (~9 MB).
 
 ---
 
-## 4. System-Wide Installation & Desktop Integration
+## 5. Desktop Shortcut Integration (GNOME Wayland)
 
-### 1. Install Binary to User Path
-```bash
-mkdir -p ~/.local/bin
-cp build/bin/beam ~/.local/bin/beam
-chmod +x ~/.local/bin/beam
-```
-
-### 2. Create Desktop Entry
-Create `~/.local/share/applications/beam.desktop`:
-```ini
-[Desktop Entry]
-Name=Beam
-Comment=Raycast-like launcher for Linux
-Exec=/home/dilkhush/.local/bin/beam
-Icon=utilities-terminal
-Terminal=false
-Type=Application
-Categories=Utility;System;
-StartupNotify=false
-```
-
-### 3. Global Hotkey Configuration (GNOME Wayland)
-1. Open **GNOME Settings** (`gnome-control-center`).
-2. Navigate to **Keyboard** → **Keyboard Shortcuts** → **View and Customize Shortcuts** → **Custom Shortcuts**.
-3. Click **Add Shortcut (+)**:
+1. Open **GNOME Settings** → **Keyboard** → **View and Customize Shortcuts** → **Custom Shortcuts**.
+2. Click **+** to add a new shortcut:
    * **Name:** `Beam Launcher`
-   * **Command:** `/home/dilkhush/.local/bin/beam`
-   * **Shortcut:** `Alt + Space` (or `Super + Space`)
-
----
-
-## 5. Troubleshooting & FAQ
-
-### Issue: "Required dependencies missing: libwebkit"
-* **Cause:** Wails looks for `webkit2gtk-4.0.pc` by default, but modern distributions (Arch, Fedora) ship `webkit2gtk-4.1`.
-* **Fix:** Always provide `-tags webkit2_41` to `wails build` and `wails dev`.
-
-### Issue: Clipboard history not updating on Wayland
-* **Cause:** Missing Wayland clipboard CLI tool.
-* **Fix:** Ensure `wl-clipboard` is installed (`sudo pacman -S wl-clipboard`). Test manually using `wl-paste`.
-
-### Issue: Window not appearing on top in Wayland
-* **Cause:** Wayland compositors control window stacking strictly.
-* **Fix:** In `main.go`, ensure `AlwaysOnTop: true` and `DisableResize: true` are set. For GNOME, `HideWindowOnClose` allows the process to stay alive and re-focus instantly.
+   * **Command:** `/home/dilkhush/Desktop/Mine/beam/build/bin/beam`
+   * **Shortcut:** `Alt + Space` or `Super + Space`
