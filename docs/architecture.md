@@ -56,6 +56,11 @@ graph TD
             DAEMON["Single-Instance Socket Daemon"]
             EXT["Raycast Script Runner"]
         end
+        subgraph "P4: Productivity Power Tools"
+            TODO["To-Do Task Manager Engine"]
+            EMOJI["Emoji Search & Picker Engine"]
+            CONV["Universal Convert Anything Engine"]
+        end
     end
 
     Bindings <--> AM
@@ -65,6 +70,9 @@ graph TD
     Bindings <--> DB
     Bindings <--> DAEMON
     Bindings <--> EXT
+    Bindings <--> TODO
+    Bindings <--> EMOJI
+    Bindings <--> CONV
     Bindings <--> SYS
 
     CB <-->|Poll / Write| CM
@@ -113,5 +121,17 @@ graph TD
 ### Priority 3 (P3) — Theming & Action Palette
 1. **Action Palette (`Ctrl + K`)**:
    * Modal action sheet for context-sensitive commands ("Copy Exec Path", "Reveal in Files", "Open in Terminal").
-2. **Tailwind Custom Theming**:
-   * Pre-packaged themes (Catppuccin Mocha, Tokyo Night, Nord, OLED Dark) toggled via Tailwind CSS classes.
+2. **Custom Glassmorphism Theming**:
+   * Pre-packaged themes (Catppuccin Mocha, Tokyo Night, Nord, OLED Dark) driven by centralized CSS design tokens.
+
+---
+
+### Priority 4 (P4) — Productivity Power Tools
+1. **To-Do Task Manager (`backend/todo.go`)**:
+   * SQLite-backed task checklist with sub-millisecond querying and inline task creation.
+   * Spacebar toggle support, status filtering (`all`, `active`, `completed`), and keyboard deletion.
+2. **Emoji & Symbol Picker (`backend/emoji.go`)**:
+   * Embedded Unicode emoji database with fast prefix/acronym fuzzy matching.
+   * Selecting an item copies the raw character to clipboard and triggers simulated paste into the target application.
+3. **Universal Converter Engine (`backend/convert.go`)**:
+   * Natural-language parser supporting multi-domain conversions (Length, Mass, Speed, Temperature, Currencies, Hex/RGB/HSL, Unix Timestamps, and CSS px/rem units) with zero external network overhead.

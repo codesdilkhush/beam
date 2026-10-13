@@ -160,9 +160,10 @@ beam/
   - Zero Tailwind CSS. Use clean, scoped, semantic CSS in component `<style>` blocks.
   - Consistent colors (`--surface-canvas`, `--surface-header`, `--surface-card`, `--accent-blue`, `--accent-sky`, `--border-glass`, `--border-subtle`).
   - Follow the glassmorphism design system in [design_guidelines.md](design_guidelines.md) (electric blue accents, translucent dark backdrops, smooth transitions).
-- **Strict Zero-Emoji Policy (Applications & Docs)**:
-  - Never use emojis anywhere in the application code, UI components, templates, or documentation files.
+- **Strict Zero-Emoji Policy (Applications Chrome & Docs)**:
+  - Never use emojis anywhere in the application chrome, UI components, action badges, status tags, or documentation files.
   - Use vector SVGs, Lucide icons, or semantic plain text for all visual indicators and badges.
+  - *Distinction*: The end-user Emoji & Symbol Picker tool (`/emoji`) allows users to search and insert characters into external apps; Beam's own UI chrome and code remain 100% vector SVG based.
 
 ### C. Minimal & Surgical Changes
 - **No Scope Creep**: Only touch files directly related to the assigned task.
@@ -201,10 +202,13 @@ Every functional Go file in `backend/` must have a dedicated corresponding test 
 - `backend/apps.go` -> `backend/apps_test.go`
 - `backend/calc.go` -> `backend/calc_test.go`
 - `backend/clipboard.go` -> `backend/clipboard_test.go`
+- `backend/convert.go` -> `backend/convert_test.go`
 - `backend/daemon.go` -> `backend/daemon_test.go`
+- `backend/emoji.go` -> `backend/emoji_test.go`
 - `backend/fuzzy.go` -> `backend/fuzzy_test.go`
 - `backend/icon_cache.go` -> `backend/icon_cache_test.go`
 - `backend/scripts.go` -> `backend/scripts_test.go`
+- `backend/todo.go` -> `backend/todo_test.go`
 
 ### Rules for Test Files:
 1. **Strict 1:1 Mapping**: Every new backend file introduced must be paired with its unit test file in the same commit.

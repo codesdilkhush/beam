@@ -1,11 +1,11 @@
 <script lang="ts">
-  import type { AppItem, ClipboardEntry } from '../types/index.js';
-  import { formatTime } from '../utils/format.js';
+  import type { AppItem, ClipboardEntry, TodoEntry } from '../types/index.js';
 
   interface Props {
-    items: (AppItem | ClipboardEntry)[];
+    items: (AppItem | ClipboardEntry | TodoEntry)[];
     selectedIndex: number;
     isClipboardMode: boolean;
+    isTodoMode: boolean;
     searchQuery: string;
     listElement?: HTMLDivElement | null;
     onSelect: (index: number) => void;
@@ -16,6 +16,7 @@
     items,
     selectedIndex,
     isClipboardMode,
+    isTodoMode,
     searchQuery,
     listElement = $bindable(null),
     onSelect,
@@ -23,11 +24,20 @@
   }: Props = $props();
 </script>
 
-<div bind:this={listElement} class="results-list">
+<div bind:this={listElement} class="results-list {isTodoMode ? 'full-width' : ''}">
   {#if items.length === 0}
     <div class="empty-state">
-      <p>No results found for "{searchQuery}"</p>
-      <span class="empty-hint">Press <kbd>↵</kbd> to search on Google</span>
+      {#if isTodoMode}
+        <p>No tasks found {searchQuery ? `for "${searchQuery}"` : ''}</p>
+        {#if searchQuery.trim()}
+          <span class="empty-hint">Press <kbd>↵</kbd> to add "{searchQuery.trim()}" as a task</span>
+        {:else}
+          <span class="empty-hint">Type a task description and press <kbd>↵</kbd></span>
+        {/if}
+      {:else}
+        <p>No results found for "{searchQuery}"</p>
+        <span class="empty-hint">Press <kbd>↵</kbd> to search on Google</span>
+      {/if}
     </div>
   {:else}
     {#each items as item, idx}
@@ -39,19 +49,32 @@
         onmouseenter={() => onHover(idx)}
       >
         <div class="item-left">
-          {#if isClipboardMode}
+          {#if isTodoMode}
+            {@const todo = item as TodoEntry}
+            <div class="icon-box">
+              <div class="todo-checkbox {todo.completed ? 'checked' : ''}">
+                {#if todo.completed}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                {/if}
+              </div>
+            </div>
+            <div class="item-info clip-info">
+              <span class="item-title truncate {todo.completed ? 'todo-done' : ''}">{todo.title}</span>
+            </div>
+          {:else if isClipboardMode}
             {@const clip = item as ClipboardEntry}
-            <div class="icon-box icon-clipboard">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1 2-2h2"></path>
-                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-              </svg>
+            <div class="icon-box">
+              <div class="icon-clipboard">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                </svg>
+              </div>
             </div>
             <div class="item-info clip-info">
               <span class="item-title truncate">{clip.preview}</span>
-              <span class="item-subtitle truncate">
-                {clip.charCount} chars {clip.timestamp ? `• ${formatTime(clip.timestamp)}` : ''}
-              </span>
             </div>
           {:else}
             {@const app = item as AppItem}
@@ -76,7 +99,7 @@
         {#if isSelected}
           <div class="item-right">
             <span class="action-badge">
-              ↵ {isClipboardMode ? 'Copy' : 'Open'}
+              ↵ {#if isTodoMode}Toggle{:else if isClipboardMode}Copy{:else}Open{/if}
             </span>
           </div>
         {/if}
@@ -96,6 +119,11 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+  }
+
+  .results-list.full-width {
+    flex: 1;
+    border-right: none;
   }
 
   .list-item {
@@ -146,9 +174,16 @@
   }
 
   .icon-clipboard {
-    background: rgba(245, 158, 11, 0.12);
-    color: var(--accent-amber);
-    border: 1px solid rgba(245, 158, 11, 0.25);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--accent-sky);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.1);
   }
 
   .app-icon {
@@ -177,27 +212,42 @@
     flex: 1;
   }
 
-  .app-info {
+  .app-info,
+  .clip-info {
     display: flex;
     align-items: center;
     gap: 8px;
   }
 
-  .clip-info {
+  .todo-checkbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    border: 1.5px solid var(--accent-sky);
+    background: transparent;
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    transition: all 0.15s ease;
   }
+
+  .todo-checkbox.checked {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+  }
+
+  .todo-done {
+    text-decoration: line-through;
+    color: var(--text-muted);
+  }
+
+
 
   .item-title {
     font-size: 13.5px;
     font-weight: 500;
     color: var(--text-primary);
-  }
-
-  .item-subtitle {
-    font-size: 11.5px;
-    color: var(--text-muted);
   }
 
   .launch-badge {

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestIconCache_GetOrConvert(t *testing.T) {
@@ -43,4 +44,7 @@ func TestIconCache_GetOrConvert(t *testing.T) {
 	if emptyURL != "" {
 		t.Fatalf("expected empty string for missing file, got %q", emptyURL)
 	}
+
+	// Allow goroutine disk write to complete before test cleanup
+	time.Sleep(25 * time.Millisecond)
 }

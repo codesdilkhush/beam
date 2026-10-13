@@ -131,3 +131,43 @@ func (a *App) QuitApp() {
 func (a *App) LoadIconAsDataURL(iconPath string) string {
 	return backend.GetIconCache().GetOrConvert(iconPath)
 }
+
+// GetTodos returns all To-Do items from SQLite
+func (a *App) GetTodos() []backend.TodoItem {
+	return backend.GetTodoManager().GetTodos()
+}
+
+// AddTodo creates a new To-Do item in SQLite
+func (a *App) AddTodo(title string) (*backend.TodoItem, error) {
+	return backend.GetTodoManager().AddTodo(title)
+}
+
+// ToggleTodo toggles completion state of a To-Do item
+func (a *App) ToggleTodo(id string) error {
+	return backend.GetTodoManager().ToggleTodo(id)
+}
+
+// DeleteTodo removes a To-Do item
+func (a *App) DeleteTodo(id string) error {
+	return backend.GetTodoManager().DeleteTodo(id)
+}
+
+// ClearCompletedTodos removes all completed tasks
+func (a *App) ClearCompletedTodos() error {
+	return backend.GetTodoManager().ClearCompleted()
+}
+
+// GetEmojis returns the full emoji catalog
+func (a *App) GetEmojis() []backend.EmojiItem {
+	return backend.GetEmojiManager().GetAll()
+}
+
+// SearchEmojis filters emojis with fuzzy matching
+func (a *App) SearchEmojis(query string) []backend.EmojiItem {
+	return backend.GetEmojiManager().SearchEmojis(query)
+}
+
+// ConvertQuery evaluates unit, currency, color, time, and CSS conversions
+func (a *App) ConvertQuery(query string) backend.ConvertResult {
+	return backend.Convert(query)
+}

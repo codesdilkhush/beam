@@ -126,3 +126,37 @@ func TestClipboardManager_SQLitePersistence(t *testing.T) {
 		t.Errorf("expected 0 rows in sqlite after clear, got %d", count)
 	}
 }
+
+func TestClipboardManager_RejectBinary(t *testing.T) {
+	cm := &ClipboardManager{
+		items:   make([]ClipboardItem, 0, 10),
+		maxSize: 10,
+	}
+
+	// 1. Binary PNG header byte sequence
+	pngHeader := "\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+	cm.AddItem(pngHeader)
+	if len(cm.GetHistory()) != 0 {
+		t.Errorf("expected binary PNG to be rejected, got %d items", len(cm.GetHistory()))
+	}
+
+	// 2. String containing NUL byte
+	nulString := "hello\x00world"
+	cm.AddItem(nulString)
+	if len(cm.GetHistory()) != 0 {
+		t.Errorf("expected string with NUL byte to be rejected, got %d items", len(cm.GetHistory()))
+	}
+
+	// 3. Invalid UTF-8 sequence
+	invalidUTF8 := "\xff\xfe\xfd"
+	cm.AddItem(invalidUTF8)
+	if len(cm.GetHistory()) != 0 {
+		t.Errorf("expected invalid UTF-8 to be rejected, got %d items", len(cm.GetHistory()))
+	}
+
+	// 4. Valid text works normally
+	cm.AddItem("Normal clipboard text")
+	if len(cm.GetHistory()) != 1 {
+		t.Errorf("expected 1 valid item, got %d", len(cm.GetHistory()))
+	}
+}

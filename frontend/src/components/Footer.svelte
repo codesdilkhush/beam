@@ -1,17 +1,48 @@
 <script lang="ts">
-  import type { AppItem } from '../types/index.js';
+  import type { AppItem, TodoEntry, EmojiEntry, ConvertItem } from '../types/index.js';
 
   interface Props {
     isClipboardMode: boolean;
+    isTodoMode: boolean;
+    isEmojiMode: boolean;
     selectedApp: AppItem | null;
+    selectedTodo: TodoEntry | null;
+    selectedEmoji: EmojiEntry | null;
+    convertResult: ConvertItem | null;
   }
 
-  let { isClipboardMode, selectedApp }: Props = $props();
+  let {
+    isClipboardMode,
+    isTodoMode,
+    isEmojiMode,
+    selectedApp,
+    selectedTodo,
+    selectedEmoji,
+    convertResult
+  }: Props = $props();
 </script>
 
 <footer class="footer">
   <div class="footer-left">
-    {#if isClipboardMode}
+    {#if convertResult && convertResult.success}
+      <span class="active-action">
+        <kbd>↵</kbd> Copy Conversion Result
+      </span>
+    {:else if isTodoMode}
+      {#if selectedTodo}
+        <span class="active-action">
+          <kbd>Space</kbd> / <kbd>↵</kbd> Toggle Task
+        </span>
+      {:else}
+        <span class="active-action">
+          <kbd>↵</kbd> Add Task
+        </span>
+      {/if}
+    {:else if isEmojiMode}
+      <span class="active-action">
+        <kbd>↵</kbd> Copy to Clipboard {#if selectedEmoji}<span class="footer-selected-detail">({selectedEmoji.name})</span>{/if}
+      </span>
+    {:else if isClipboardMode}
       <span class="active-action">
         <kbd>↵</kbd> Copy to Clipboard
       </span>
@@ -28,6 +59,9 @@
   <div class="footer-right">
     <span class="footer-hint"><kbd>Ctrl+K</kbd> Actions</span>
     <span class="footer-hint"><kbd>Tab</kbd> Mode</span>
+    {#if isTodoMode && selectedTodo}
+      <span class="footer-hint"><kbd>Ctrl+D</kbd> Delete</span>
+    {/if}
     <span class="footer-hint"><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
     <span class="footer-hint"><kbd>Esc</kbd> Close</span>
   </div>
@@ -58,6 +92,11 @@
     gap: 6px;
     color: var(--text-secondary);
     font-weight: 500;
+  }
+
+  .footer-selected-detail {
+    color: var(--text-muted);
+    font-weight: 400;
   }
 
   .footer-right {

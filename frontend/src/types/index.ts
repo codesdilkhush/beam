@@ -26,6 +26,34 @@ export interface CalcItem {
   success: boolean;
 }
 
+export interface TodoEntry {
+  id: string;
+  title: string;
+  completed: boolean;
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface EmojiEntry {
+  emoji: string;
+  name: string;
+  shortcode: string;
+  category: string;
+  keywords: string[];
+}
+
+export interface ConvertItem {
+  success: boolean;
+  query: string;
+  fromValue: string;
+  fromUnit: string;
+  toValue: string;
+  toUnit: string;
+  result: string;
+  category: string;
+  formatted: string;
+}
+
 export interface ActionOption {
   id: string;
   label: string;
@@ -35,4 +63,5 @@ export interface ActionOption {
 
 export type ThemeType = 'default' | 'theme-catppuccin' | 'theme-tokyo' | 'theme-nord';
 
-export type TabType = 'all' | 'apps' | 'clipboard';
+export type TabType = 'all' | 'apps' | 'clipboard' | 'todo' | 'emoji';
+

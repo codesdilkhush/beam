@@ -14,6 +14,7 @@ Beam delivers the **Raycast experience on Linux** through a tiered, priority-dri
 | **P1 (High)** | Search & Persistence | • `fzf`-style fuzzy scoring & acronym matching<br>• Persistent SQLite database (`beam.db`)<br>• AST math evaluation & converters<br>• High-res icon cache | < 10ms |
 | **P2 (Medium)** | Extensibility & Daemon | • UNIX socket single-instance daemon (`beam --toggle`)<br>• Raycast-compatible script commands<br>• Image/screenshot clipboard storage | < 5ms (toggle) |
 | **P3 (Enhancement)**| Customization & Polish | • `Ctrl+K` action palette<br>• Community themes (Catppuccin, Tokyo Night)<br>• Preferences configuration UI | Instant |
+| **P4 (Productivity)**| Power Tools | • SQLite To-Do & Task Manager (`/todo`)<br>• Emoji & Symbol Picker (`/emoji`)<br>• Universal "Convert Anything" engine | < 10ms |
 
 ---
 
@@ -51,8 +52,15 @@ Beam delivers the **Raycast experience on Linux** through a tiered, priority-dri
 * **Goal:** Contextual deep actions and visual personalization.
 * **Requirements:**
   * `Ctrl+K` popover showing secondary actions for selected item.
-  * Theme switcher powered by Tailwind CSS classes.
+  * Theme switcher powered by custom glassmorphism CSS tokens.
   * User settings stored in `~/.config/beam/config.json`.
+
+### P4: Productivity Power Tools
+* **Goal:** Integrated daily productivity primitives directly in the spotlight interface.
+* **Requirements:**
+  * **To-Do Task Manager (`/todo`):** Quick-entry checklist persisted in SQLite, spacebar toggling, completion tracking.
+  * **Emoji & Symbol Picker (`/emoji`):** Instant search of Unicode characters with descriptions and shortcodes, copying or typing on Enter.
+  * **Universal "Convert Anything" Engine:** Real-time multi-unit, currency, color, time, and CSS conversions with one-click copy.
 
 ---
 

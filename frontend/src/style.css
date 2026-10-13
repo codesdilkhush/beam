@@ -33,6 +33,7 @@
   --surface-card: rgba(36, 36, 56, 0.75);
   --accent-blue: #89b4fa;
   --accent-blue-glow: rgba(137, 180, 250, 0.35);
+  --accent-sky: #89b4fa;
   --surface-selected: rgba(137, 180, 250, 0.16);
   --border-selected: rgba(137, 180, 250, 0.4);
 }
@@ -43,6 +44,7 @@
   --surface-card: rgba(32, 34, 48, 0.75);
   --accent-blue: #7aa2f7;
   --accent-blue-glow: rgba(122, 162, 247, 0.35);
+  --accent-sky: #7aa2f7;
   --surface-selected: rgba(122, 162, 247, 0.16);
   --border-selected: rgba(122, 162, 247, 0.4);
 }
@@ -53,6 +55,7 @@
   --surface-card: rgba(52, 59, 72, 0.75);
   --accent-blue: #88c0d0;
   --accent-blue-glow: rgba(136, 192, 208, 0.35);
+  --accent-sky: #88c0d0;
   --surface-selected: rgba(136, 192, 208, 0.16);
   --border-selected: rgba(136, 192, 208, 0.4);
 }

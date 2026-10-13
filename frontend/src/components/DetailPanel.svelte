@@ -1,29 +1,110 @@
 <script lang="ts">
-  import type { AppItem, ClipboardEntry } from '../types/index.js';
+  import type { AppItem, ClipboardEntry, EmojiEntry } from '../types/index.js';
   import { formatTime } from '../utils/format.js';
 
   interface Props {
     isClipboardMode: boolean;
+    isEmojiMode: boolean;
     selectedClip: ClipboardEntry | null;
+    selectedEmoji: EmojiEntry | null;
     selectedApp: AppItem | null;
   }
 
-  let { isClipboardMode, selectedClip, selectedApp }: Props = $props();
+  let {
+    isClipboardMode,
+    isEmojiMode,
+    selectedClip,
+    selectedEmoji,
+    selectedApp
+  }: Props = $props();
+
+  const MAX_PREVIEW_LEN = 5000;
+
+  const isTruncated = $derived(
+    Boolean(selectedClip && selectedClip.content.length > MAX_PREVIEW_LEN)
+  );
+
+  const previewContent = $derived.by(() => {
+    if (!selectedClip) return '';
+    if (selectedClip.content.length > MAX_PREVIEW_LEN) {
+      return selectedClip.content.slice(0, MAX_PREVIEW_LEN);
+    }
+    return selectedClip.content;
+  });
 
   function countWords(str: string): number {
     if (!str) return 0;
-    const matches = str.trim().match(/\S+/g);
-    return matches ? matches.length : 0;
+    let count = 0;
+    let inWord = false;
+    const len = Math.min(str.length, 50000);
+    for (let i = 0; i < len; i++) {
+      const code = str.charCodeAt(i);
+      if (code <= 32) {
+        inWord = false;
+      } else if (!inWord) {
+        inWord = true;
+        count++;
+      }
+    }
+    if (str.length > 50000) {
+      count = Math.round((count / 50000) * str.length);
+    }
+    return count;
+  }
+
+  function getCodepoints(str: string): string {
+    if (!str) return '';
+    return Array.from(str)
+      .map((char) => 'U+' + (char.codePointAt(0)?.toString(16).toUpperCase() || ''))
+      .join(' ');
   }
 </script>
 
 <div class="detail-panel">
-  {#if isClipboardMode && selectedClip}
+  {#if isEmojiMode && selectedEmoji}
+    <!-- Emoji Detail View -->
+    <div class="panel-section">
+      <div class="emoji-hero">
+        <div class="emoji-large">{selectedEmoji.emoji}</div>
+        <div class="emoji-hero-info">
+          <h2 class="app-heading truncate">{selectedEmoji.name}</h2>
+          <span class="activity-badge">{selectedEmoji.category}</span>
+        </div>
+      </div>
+
+      <div class="info-block">
+        <span class="block-label">Shortcode</span>
+        <code class="code-tag">{selectedEmoji.shortcode}</code>
+      </div>
+
+      <div class="info-block">
+        <span class="block-label">Unicode Codepoint</span>
+        <span class="codepoint-text">{getCodepoints(selectedEmoji.emoji)}</span>
+      </div>
+
+      {#if selectedEmoji.keywords && selectedEmoji.keywords.length > 0}
+        <div class="info-block">
+          <span class="block-label">Keywords</span>
+          <div class="keywords-wrap">
+            {#each selectedEmoji.keywords as kw}
+              <span class="keyword-chip">{kw}</span>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    </div>
+  {:else if isClipboardMode && selectedClip}
     <!-- Clipboard Detail View -->
     <div class="panel-section">
       <div class="clip-header">
         <div class="clip-title-row">
-          <span class="clip-badge">Clipboard Item</span>
+          <div class="clip-title-left">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="clip-icon">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+            </svg>
+            <span class="clip-badge">Clipboard Item</span>
+          </div>
           {#if selectedClip.timestamp}
             <span class="time-tag">{formatTime(selectedClip.timestamp)}</span>
           {/if}
@@ -36,7 +117,12 @@
       </div>
 
       <div class="clip-preview-container">
-        <pre class="clip-text">{selectedClip.content}</pre>
+        <pre class="clip-text">{previewContent}</pre>
+        {#if isTruncated}
+          <div class="clip-truncated-hint">
+            Preview capped to first 5,000 characters • Full text preserved on copy
+          </div>
+        {/if}
       </div>
     </div>
   {:else if selectedApp}
@@ -191,12 +277,24 @@
     justify-content: space-between;
   }
 
+  .clip-title-left {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .clip-icon {
+    color: var(--accent-sky);
+    display: flex;
+    align-items: center;
+  }
+
   .clip-badge {
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    color: var(--accent-amber);
+    color: var(--accent-sky);
   }
 
   .time-tag {
@@ -229,6 +327,72 @@
     white-space: pre-wrap;
     word-break: break-all;
     user-select: text;
+  }
+
+  .clip-truncated-hint {
+    margin-top: 10px;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed var(--border-subtle);
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+
+
+  /* Emoji Detail Styles */
+  .emoji-hero {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .emoji-large {
+    font-size: 52px;
+    line-height: 1;
+  }
+
+  .emoji-hero-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .code-tag {
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 13px;
+    color: var(--accent-sky);
+    background: rgba(96, 165, 250, 0.12);
+    padding: 3px 8px;
+    border-radius: 5px;
+    align-self: flex-start;
+    border: 1px solid rgba(96, 165, 250, 0.2);
+  }
+
+  .codepoint-text {
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .keywords-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .keyword-chip {
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid var(--border-subtle);
   }
 
   /* Placeholder */

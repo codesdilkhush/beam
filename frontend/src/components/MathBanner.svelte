@@ -1,15 +1,37 @@
 <script lang="ts">
-  import type { CalcItem } from '../types/index.js';
+  import type { CalcItem, ConvertItem } from '../types/index.js';
 
   interface Props {
     mathResult: CalcItem | null;
+    convertResult: ConvertItem | null;
     onCopy: (result: string) => void;
   }
 
-  let { mathResult, onCopy }: Props = $props();
+  let { mathResult, convertResult, onCopy }: Props = $props();
 </script>
 
-{#if mathResult && mathResult.success}
+{#if convertResult && convertResult.success}
+  <button
+    type="button"
+    class="math-banner convert-mode"
+    onclick={() => onCopy(convertResult?.result || '')}
+  >
+    <div class="math-left">
+      <span class="math-icon convert-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="17 1 21 5 17 9"></polyline>
+          <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+          <polyline points="7 23 3 19 7 15"></polyline>
+          <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+        </svg>
+      </span>
+      <span class="math-expr">{convertResult.formatted}</span>
+    </div>
+    <div class="math-right">
+      <span class="copy-hint"><kbd>↵</kbd> Copy Result</span>
+    </div>
+  </button>
+{:else if mathResult && mathResult.success}
   <button
     type="button"
     class="math-banner"
@@ -53,6 +75,19 @@
 
   .math-banner:hover {
     background: rgba(16, 185, 129, 0.14);
+  }
+
+  .math-banner.convert-mode {
+    background: rgba(96, 165, 250, 0.08);
+    border-bottom: 1px solid rgba(96, 165, 250, 0.2);
+  }
+
+  .math-banner.convert-mode:hover {
+    background: rgba(96, 165, 250, 0.14);
+  }
+
+  .convert-icon {
+    color: var(--accent-sky);
   }
 
   .math-left {

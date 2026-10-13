@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	_ "modernc.org/sqlite"
 )
@@ -89,6 +90,18 @@ func (cm *ClipboardManager) initDatabase() {
 	if _, err := cm.db.Exec(query); err != nil {
 		return
 	}
+	// Clean up any legacy corrupt binary or PNG rows
+	_, _ = cm.db.Exec(`DELETE FROM clipboard_history WHERE content LIKE '%PNG%' OR char_count > 500000;`)
+}
+
+func isTextContent(data []byte) bool {
+	if len(data) == 0 {
+		return false
+	}
+	if bytes.IndexByte(data, 0) != -1 {
+		return false
+	}
+	return utf8.Valid(data)
 }
 
 func (cm *ClipboardManager) loadHistoryFromDB() {
@@ -103,14 +116,27 @@ func (cm *ClipboardManager) loadHistoryFromDB() {
 	defer rows.Close()
 
 	var loaded []ClipboardItem
+	var corruptIDs []string
 	for rows.Next() {
 		var item ClipboardItem
 		if scanErr := rows.Scan(&item.ID, &item.Content, &item.Preview, &item.CharCount, &item.Timestamp); scanErr == nil {
+			if !isTextContent([]byte(item.Content)) || !utf8.ValidString(item.Preview) {
+				corruptIDs = append(corruptIDs, item.ID)
+				continue
+			}
 			loaded = append(loaded, item)
 		}
 	}
 	if err := rows.Err(); err != nil {
 		return
+	}
+
+	if len(corruptIDs) > 0 {
+		go func(ids []string) {
+			for _, id := range ids {
+				_, _ = cm.db.Exec("DELETE FROM clipboard_history WHERE id = ?", id)
+			}
+		}(corruptIDs)
 	}
 
 	cm.mu.Lock()
@@ -142,9 +168,20 @@ func (cm *ClipboardManager) StartWatcher(ctx context.Context) {
 }
 
 func (cm *ClipboardManager) AddItem(content string) {
+	if !isTextContent([]byte(content)) {
+		return
+	}
+
 	trimmed := strings.TrimSpace(content)
 	if trimmed == "" {
 		return
+	}
+
+	// Guard against enormous memory exhaustion
+	const maxClipLength = 200000
+	if len(content) > maxClipLength {
+		content = content[:maxClipLength]
+		trimmed = strings.TrimSpace(content)
 	}
 
 	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(content)))
@@ -220,24 +257,40 @@ func (cm *ClipboardManager) ClearHistory() error {
 
 func ReadCurrentClipboard() (string, error) {
 	if path, err := exec.LookPath("wl-paste"); err == nil {
-		cmd := exec.Command(path, "--no-newline")
+		// Explicitly request text/plain to avoid receiving binary image formats like PNG
+		cmd := exec.Command(path, "-t", "text/plain", "--no-newline")
 		var out bytes.Buffer
 		cmd.Stdout = &out
 		if runErr := cmd.Run(); runErr == nil {
-			return out.String(), nil
+			if isTextContent(out.Bytes()) {
+				return out.String(), nil
+			}
 		}
 	}
 
 	if path, err := exec.LookPath("xclip"); err == nil {
-		cmd := exec.Command(path, "-selection", "clipboard", "-o")
+		// Prefer UTF8_STRING to avoid raw binary targets
+		cmd := exec.Command(path, "-selection", "clipboard", "-t", "UTF8_STRING", "-o")
 		var out bytes.Buffer
 		cmd.Stdout = &out
 		if runErr := cmd.Run(); runErr == nil {
-			return out.String(), nil
+			if isTextContent(out.Bytes()) {
+				return out.String(), nil
+			}
+		}
+
+		// Fallback for xclip
+		cmd = exec.Command(path, "-selection", "clipboard", "-o")
+		out.Reset()
+		cmd.Stdout = &out
+		if runErr := cmd.Run(); runErr == nil {
+			if isTextContent(out.Bytes()) {
+				return out.String(), nil
+			}
 		}
 	}
 
-	return "", fmt.Errorf("no clipboard tool found")
+	return "", fmt.Errorf("no clipboard tool found or non-text content")
 }
 
 func WriteClipboard(text string) error {

@@ -15,7 +15,9 @@ gantt
     M4 - Single-Instance UNIX Socket Daemon             :done, m4, 2026-10-14, 2026-10-14
     M5 - Raycast Script Commands Engine                 :done, m5, 2026-10-14, 2026-10-14
     section P3: Personalization
-    M6 - Action Palette (Ctrl+K) & Tailwind Themes      :done, m6, 2026-10-14, 2026-10-14
+    M6 - Action Palette (Ctrl+K) & Custom Themes        :done, m6, 2026-10-14, 2026-10-14
+    section P4: Productivity Tools
+    M7 - To-Do List, Emoji Picker & Universal Converter :done, m7, 2026-10-14, 2026-10-14
 ```
 
 ---
@@ -73,5 +75,30 @@ gantt
 ## Priority 3 (P3) — Milestone 6: Action Palette & Theming (Completed)
 * [x] **Raycast Action Palette (`Ctrl + K`):**
   * Popover action menu with context-aware actions ("Run in Terminal", "Copy Command Line", "Copy Desktop Path", "Switch Theme").
-* [x] **Tailwind Theme Switcher:**
+* [x] **Custom Glassmorphism Theme Switcher:**
   * Built-in themes (Default Dark Glass, Catppuccin Mocha, Tokyo Night, Nord) with persistent `localStorage` storage.
+
+---
+
+## Priority 4 (P4) — Milestone 7: Productivity Power Tools (Completed)
+* [x] **SQLite To-Do & Task Manager (`/todo`):**
+  * Persistent storage in `~/.local/share/beam/beam.db` (`todo_items` table with completion status and timestamps).
+  * Quick-add inline tasks directly from the search bar.
+  * Keyboard-first interaction (`Space` to toggle completion, `Ctrl+D` to delete, `↵` to edit).
+  * Dedicated Go subsystem (`backend/todo.go`) and 1:1 unit test suite (`backend/todo_test.go`).
+* [x] **Search & Insert Emoji Engine (`/emoji`):**
+  * Fast fuzzy search across Unicode emojis, shortcodes (e.g., `:rocket:`, `:fire:`), and contextual tags.
+  * Zero-external-dependency embedded dataset in Go engine (`backend/emoji.go`).
+  * Instant keyboard selection: `Enter` copies to clipboard and inserts into active window.
+  * 1:1 unit test suite (`backend/emoji_test.go`).
+  * *Policy Compliance:* Adheres to Beam's Zero-Emoji UI policy — Beam's chrome and UI controls strictly use vector SVGs; the emoji engine serves as an end-user character discovery utility.
+* [x] **Universal "Convert Anything" Engine (`backend/convert.go`):**
+  * High-speed conversion parser evaluating queries inline:
+    * **Physical Units:** Length (km, mi, m, ft, in), Mass (kg, lb, g, oz), Temperature (C, F, K), Speed (km/h, mph), Data storage (KB, MB, GB, TB).
+    * **Color Codes:** Hex to RGB/HSL, RGB to Hex/HSL (`#3875f6` -> `rgb(56, 117, 246)`).
+    * **Time, Date & Calendar:** Natural calendar queries (e.g., `days in march`, `days in current month`, `what is the weekday?`, `days left in year`, `week number`, `day of year`, `is 2024 a leap year`), and Unix epoch conversions.
+    * **Currencies:** Common fiat currencies with base conversion ratios.
+    * **CSS Units:** `px` to `rem` and `rem` to `px` conversions.
+  * Dynamic result banner preview with instant one-key copy (`Enter`).
+  * 1:1 unit test suite (`backend/convert_test.go`).
+
