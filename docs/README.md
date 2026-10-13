@@ -11,6 +11,7 @@ Welcome to the engineering documentation for **Beam**, a fast, keyboard-centric 
 | **[Architecture](architecture.md)** | Subsystem architecture prioritized by P0/P1/P2/P3, Mermaid diagrams, Go engine, and IPC bridge. |
 | **[Product & Technical Plan](plan.md)** | Priority Matrix (P0 to P3), acceptance criteria, and technical stack specifications. |
 | **[Operations & Developer Guide](operations.md)** | Bun setup commands, Tailwind CSS v4 Vite integration, hot reload, and desktop hotkeys. |
+| **[Design Guidelines](design_guidelines.md)** | Raycast-inspired glassmorphism, electric blue color palette, typography, and micro-interactions. |
 | **[Milestones & Roadmap](milestones.md)** | Priority-driven development milestones from P0 MVP to P3 Theming. |
 
 ---
