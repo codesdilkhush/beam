@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name (e.g. v0.1.0)'
+        required: false
+        type: string
+      draft:
+        description: 'Create draft release'
+        required: false
+        type: boolean
+        default: false
+      prerelease:
+        description: 'Mark as prerelease'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build & Release (Linux amd64)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev pkg-config
+
+      - name: Install Wails CLI
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          bun install
+
+      - name: Build Production Standalone Binary
+        run: |
+          wails build -tags webkit2_41 -ldflags="-s -w" -clean
+
+      - name: Package Release Assets
+        run: |
+          mkdir -p release-pkg
+          cp build/bin/beam release-pkg/beam
+          cp install.sh release-pkg/install.sh
+          cp README.md release-pkg/README.md
+          cp LICENSE release-pkg/LICENSE
+          cp build/appicon.png release-pkg/beam.png
+
+          tar -czvf beam-linux-amd64.tar.gz -C release-pkg .
+          sha256sum beam-linux-amd64.tar.gz > beam-linux-amd64.tar.gz.sha256
+
+          cp build/bin/beam ./beam-linux-amd64
+          sha256sum beam-linux-amd64 > beam-linux-amd64.sha256
+
+      - name: Determine Tag Name
+        id: tag
+        run: |
+          if [ -n "${{ inputs.tag_name }}" ]; then
+            echo "name=${{ inputs.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "name=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release & Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: Beam ${{ steps.tag.outputs.name }}
+          draft: ${{ inputs.draft || false }}
+          prerelease: ${{ inputs.prerelease || false }}
+          generate_release_notes: true
+          files: |
+            beam-linux-amd64.tar.gz
+            beam-linux-amd64.tar.gz.sha256
+            beam-linux-amd64
+            beam-linux-amd64.sha256
+            install.sh

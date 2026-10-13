@@ -1,5 +1,5 @@
 # ==============================================================================
-# ⚡ Beam Launcher - Makefile
+# Beam Launcher - Makefile
 # ==============================================================================
 
 SHELL := /bin/bash
@@ -16,7 +16,7 @@ all: help
 
 ## help: Display this help message with available commands
 help:
-	@echo "⚡ Beam Launcher - Development & Build Tasks"
+	@echo "Beam Launcher - Development & Build Tasks"
 	@echo "--------------------------------------------------------"
 	@echo "Usage: make [target]"
 	@echo ""
@@ -80,7 +80,7 @@ install: build-prod
 	mkdir -p $(INSTALL_DIR)
 	cp $(OUTPUT_BIN) $(INSTALL_DIR)/$(BINARY_NAME)
 	chmod +x $(INSTALL_DIR)/$(BINARY_NAME)
-	@echo "✓ Successfully installed $(BINARY_NAME) to $(INSTALL_DIR)/$(BINARY_NAME)"
+	@echo "Successfully installed $(BINARY_NAME) to $(INSTALL_DIR)/$(BINARY_NAME)"
 
 ## test: Run backend Go tests
 test:
