@@ -6,9 +6,13 @@ export function CopyToClipboard(arg1:string):Promise<void>;
 
 export function EvaluateMath(arg1:string):Promise<backend.CalcResult>;
 
+export function ExecuteScript(arg1:string):Promise<string>;
+
 export function GetApplications():Promise<Array<backend.AppInfo>>;
 
 export function GetClipboard():Promise<Array<backend.ClipboardItem>>;
+
+export function GetScripts():Promise<Array<backend.ScriptCommand>>;
 
 export function HideWindow():Promise<void>;
 

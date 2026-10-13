@@ -28,6 +28,34 @@
   --text-muted: #6b7280;
 }
 
+/* Theme Presets */
+.theme-catppuccin {
+  --surface-canvas: rgba(30, 30, 46, 0.92);
+  --surface-header: rgba(24, 24, 37, 0.95);
+  --accent-blue: #89b4fa;
+  --accent-blue-glow: rgba(137, 180, 250, 0.4);
+  --surface-selected: rgba(137, 180, 250, 0.16);
+  --border-selected: rgba(137, 180, 250, 0.4);
+}
+
+.theme-tokyo {
+  --surface-canvas: rgba(26, 27, 38, 0.92);
+  --surface-header: rgba(22, 22, 30, 0.95);
+  --accent-blue: #7aa2f7;
+  --accent-blue-glow: rgba(122, 162, 247, 0.4);
+  --surface-selected: rgba(122, 162, 247, 0.16);
+  --border-selected: rgba(122, 162, 247, 0.4);
+}
+
+.theme-nord {
+  --surface-canvas: rgba(46, 52, 64, 0.92);
+  --surface-header: rgba(36, 41, 51, 0.95);
+  --accent-blue: #88c0d0;
+  --accent-blue-glow: rgba(136, 192, 208, 0.4);
+  --surface-selected: rgba(136, 192, 208, 0.16);
+  --border-selected: rgba(136, 192, 208, 0.4);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

@@ -4,11 +4,16 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	_ "modernc.org/sqlite"
 )
 
 type ClipboardItem struct {
@@ -21,8 +26,8 @@ type ClipboardItem struct {
 
 type ClipboardManager struct {
 	mu      sync.RWMutex
+	db      *sql.DB
 	items   []ClipboardItem
-	hashes  map[string]bool
 	maxSize int
 }
 
@@ -33,18 +38,82 @@ var (
 
 func GetClipboardManager() *ClipboardManager {
 	clipboardOnce.Do(func() {
-		clipboardInstance = &ClipboardManager{
-			items:   make([]ClipboardItem, 0, 50),
-			hashes:  make(map[string]bool),
-			maxSize: 50,
+		dir, err := os.UserHomeDir()
+		if err != nil {
+			dir = "."
 		}
+		dataDir := filepath.Join(dir, ".local/share/beam")
+		if mkErr := os.MkdirAll(dataDir, 0755); mkErr != nil {
+			dataDir = "."
+		}
+
+		dbPath := filepath.Join(dataDir, "beam.db")
+		db, err := sql.Open("sqlite", dbPath)
+		if err != nil {
+			db = nil
+		}
+
+		cm := &ClipboardManager{
+			db:      db,
+			items:   make([]ClipboardItem, 0, 100),
+			maxSize: 500,
+		}
+
+		if cm.db != nil {
+			cm.initDatabase()
+			cm.loadHistoryFromDB()
+		}
+
+		clipboardInstance = cm
 	})
 	return clipboardInstance
 }
 
+func (cm *ClipboardManager) initDatabase() {
+	if cm.db == nil {
+		return
+	}
+
+	query := `
+	CREATE TABLE IF NOT EXISTS clipboard_history (
+		id TEXT PRIMARY KEY,
+		content TEXT NOT NULL,
+		preview TEXT NOT NULL,
+		char_count INTEGER NOT NULL,
+		created_at DATETIME NOT NULL
+	);
+	CREATE INDEX IF NOT EXISTS idx_clipboard_created ON clipboard_history(created_at DESC);
+	`
+	_, _ = cm.db.Exec(query)
+}
+
+func (cm *ClipboardManager) loadHistoryFromDB() {
+	if cm.db == nil {
+		return
+	}
+
+	rows, err := cm.db.Query("SELECT id, content, preview, char_count, created_at FROM clipboard_history ORDER BY created_at DESC LIMIT 100")
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	var loaded []ClipboardItem
+	for rows.Next() {
+		var item ClipboardItem
+		if scanErr := rows.Scan(&item.ID, &item.Content, &item.Preview, &item.CharCount, &item.Timestamp); scanErr == nil {
+			loaded = append(loaded, item)
+		}
+	}
+
+	cm.mu.Lock()
+	cm.items = loaded
+	cm.mu.Unlock()
+}
+
 func (cm *ClipboardManager) StartWatcher(ctx context.Context) {
 	go func() {
-		ticker := time.NewTicker(600 * time.Millisecond)
+		ticker := time.NewTicker(500 * time.Millisecond)
 		defer ticker.Stop()
 
 		var lastContent string
@@ -73,17 +142,6 @@ func (cm *ClipboardManager) AddItem(content string) {
 
 	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(content)))
 
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
-
-	// If already in list, move to top
-	newItems := make([]ClipboardItem, 0, cm.maxSize)
-	for _, item := range cm.items {
-		if item.ID != hash {
-			newItems = append(newItems, item)
-		}
-	}
-
 	preview := trimmed
 	if len(preview) > 120 {
 		preview = preview[:120] + "..."
@@ -97,10 +155,35 @@ func (cm *ClipboardManager) AddItem(content string) {
 		CharCount: len(content),
 	}
 
-	// Prepend to top
-	cm.items = append([]ClipboardItem{item}, newItems...)
-	if len(cm.items) > cm.maxSize {
-		cm.items = cm.items[:cm.maxSize]
+	cm.mu.Lock()
+	// Move duplicate to top if existing
+	newItems := make([]ClipboardItem, 0, len(cm.items)+1)
+	newItems = append(newItems, item)
+	for _, existing := range cm.items {
+		if existing.ID != hash {
+			newItems = append(newItems, existing)
+		}
+	}
+	if len(newItems) > cm.maxSize {
+		newItems = newItems[:cm.maxSize]
+	}
+	cm.items = newItems
+	cm.mu.Unlock()
+
+	// Persist to SQLite
+	if cm.db != nil {
+		go func(it ClipboardItem) {
+			stmt := `
+			INSERT INTO clipboard_history (id, content, preview, char_count, created_at)
+			VALUES (?, ?, ?, ?, ?)
+			ON CONFLICT(id) DO UPDATE SET created_at = excluded.created_at;
+			`
+			_, _ = cm.db.Exec(stmt, it.ID, it.Content, it.Preview, it.CharCount, it.Timestamp)
+
+			// Prune excess
+			prune := `DELETE FROM clipboard_history WHERE id NOT IN (SELECT id FROM clipboard_history ORDER BY created_at DESC LIMIT 500);`
+			_, _ = cm.db.Exec(prune)
+		}(item)
 	}
 }
 
@@ -112,23 +195,33 @@ func (cm *ClipboardManager) GetHistory() []ClipboardItem {
 	return res
 }
 
+func (cm *ClipboardManager) ClearHistory() error {
+	cm.mu.Lock()
+	cm.items = make([]ClipboardItem, 0, 100)
+	cm.mu.Unlock()
+
+	if cm.db != nil {
+		_, err := cm.db.Exec("DELETE FROM clipboard_history")
+		return err
+	}
+	return nil
+}
+
 func ReadCurrentClipboard() (string, error) {
-	// Try wl-paste first (Wayland)
 	if path, err := exec.LookPath("wl-paste"); err == nil {
 		cmd := exec.Command(path, "--no-newline")
 		var out bytes.Buffer
 		cmd.Stdout = &out
-		if err := cmd.Run(); err == nil {
+		if runErr := cmd.Run(); runErr == nil {
 			return out.String(), nil
 		}
 	}
 
-	// Fallback to xclip (X11)
 	if path, err := exec.LookPath("xclip"); err == nil {
 		cmd := exec.Command(path, "-selection", "clipboard", "-o")
 		var out bytes.Buffer
 		cmd.Stdout = &out
-		if err := cmd.Run(); err == nil {
+		if runErr := cmd.Run(); runErr == nil {
 			return out.String(), nil
 		}
 	}
@@ -137,22 +230,19 @@ func ReadCurrentClipboard() (string, error) {
 }
 
 func WriteClipboard(text string) error {
-	// Try wl-copy first
 	if path, err := exec.LookPath("wl-copy"); err == nil {
 		cmd := exec.Command(path)
 		cmd.Stdin = strings.NewReader(text)
-		if err := cmd.Run(); err == nil {
-			// Also add to manager
+		if runErr := cmd.Run(); runErr == nil {
 			GetClipboardManager().AddItem(text)
 			return nil
 		}
 	}
 
-	// Fallback to xclip
 	if path, err := exec.LookPath("xclip"); err == nil {
 		cmd := exec.Command(path, "-selection", "clipboard")
 		cmd.Stdin = strings.NewReader(text)
-		if err := cmd.Run(); err == nil {
+		if runErr := cmd.Run(); runErr == nil {
 			GetClipboardManager().AddItem(text)
 			return nil
 		}

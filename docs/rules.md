@@ -112,8 +112,14 @@ beam/
 │   ├── calc_test.go       # Calculator unit tests
 │   ├── clipboard.go       # System clipboard monitor & history
 │   ├── clipboard_test.go  # Clipboard manager unit tests
+│   ├── daemon.go          # Single-instance UNIX socket server & client
+│   ├── daemon_test.go     # Daemon socket unit tests
 │   ├── fuzzy.go           # High-speed fuzzy search algorithm
-│   └── fuzzy_test.go      # Fuzzy scoring & acronym unit tests
+│   ├── fuzzy_test.go      # Fuzzy scoring & acronym unit tests
+│   ├── icon_cache.go      # Two-tier memory and disk icon cache
+│   ├── icon_cache_test.go # Icon cache unit tests
+│   ├── scripts.go         # Raycast script command discovery & runner
+│   └── scripts_test.go    # Script metadata & execution unit tests
 ├── frontend/              # Svelte 5 + Bun + Vite frontend application
 │   ├── index.html         # Webview host HTML
 │   ├── package.json       # Bun dependencies & scripts
@@ -192,7 +198,10 @@ Every functional Go file in `backend/` must have a dedicated corresponding test 
 - `backend/apps.go` -> `backend/apps_test.go`
 - `backend/calc.go` -> `backend/calc_test.go`
 - `backend/clipboard.go` -> `backend/clipboard_test.go`
+- `backend/daemon.go` -> `backend/daemon_test.go`
 - `backend/fuzzy.go` -> `backend/fuzzy_test.go`
+- `backend/icon_cache.go` -> `backend/icon_cache_test.go`
+- `backend/scripts.go` -> `backend/scripts_test.go`
 
 ### Rules for Test Files:
 1. **Strict 1:1 Mapping**: Every new backend file introduced must be paired with its unit test file in the same commit.

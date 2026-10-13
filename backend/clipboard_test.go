@@ -1,13 +1,17 @@
 package backend
 
 import (
+	"database/sql"
+	"path/filepath"
 	"testing"
+	"time"
+
+	_ "modernc.org/sqlite"
 )
 
 func TestClipboardManager_AddItem(t *testing.T) {
 	cm := &ClipboardManager{
 		items:   make([]ClipboardItem, 0, 50),
-		hashes:  make(map[string]bool),
 		maxSize: 10,
 	}
 
@@ -55,7 +59,6 @@ func TestClipboardManager_AddItem(t *testing.T) {
 func TestClipboardManager_MaxSize(t *testing.T) {
 	cm := &ClipboardManager{
 		items:   make([]ClipboardItem, 0, 5),
-		hashes:  make(map[string]bool),
 		maxSize: 3,
 	}
 
@@ -73,5 +76,51 @@ func TestClipboardManager_MaxSize(t *testing.T) {
 	}
 	if history[2].Content != "two" {
 		t.Errorf("expected oldest retained item 'two', got %q", history[2].Content)
+	}
+}
+
+func TestClipboardManager_SQLitePersistence(t *testing.T) {
+	tempDir := t.TempDir()
+	dbPath := filepath.Join(tempDir, "test_clipboard.db")
+
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("failed to open test sqlite db: %v", err)
+	}
+	defer db.Close()
+
+	cm := &ClipboardManager{
+		db:      db,
+		items:   make([]ClipboardItem, 0, 10),
+		maxSize: 10,
+	}
+	cm.initDatabase()
+
+	cm.AddItem("Persistent Note 1")
+	cm.AddItem("Persistent Note 2")
+
+	// Allow goroutine persist to write
+	time.Sleep(50 * time.Millisecond)
+
+	var count int
+	if err := db.QueryRow("SELECT COUNT(*) FROM clipboard_history").Scan(&count); err != nil {
+		t.Fatalf("failed to query count: %v", err)
+	}
+	if count != 2 {
+		t.Errorf("expected 2 rows in sqlite, got %d", count)
+	}
+
+	// Test ClearHistory
+	if err := cm.ClearHistory(); err != nil {
+		t.Fatalf("ClearHistory failed: %v", err)
+	}
+	if len(cm.GetHistory()) != 0 {
+		t.Errorf("expected 0 in-memory items after clear, got %d", len(cm.GetHistory()))
+	}
+	if err := db.QueryRow("SELECT COUNT(*) FROM clipboard_history").Scan(&count); err != nil {
+		t.Fatalf("failed to query count after clear: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("expected 0 rows in sqlite after clear, got %d", count)
 	}
 }

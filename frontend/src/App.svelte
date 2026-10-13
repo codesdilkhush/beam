@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import {
     SearchApps,
-    GetApplications,
     LaunchApp,
     GetClipboard,
     CopyToClipboard,
@@ -40,9 +39,19 @@
     success: boolean;
   }
 
+  interface ActionOption {
+    id: string;
+    label: string;
+    shortcut: string;
+    run: () => Promise<void> | void;
+  }
+
   let searchQuery = $state('');
   let activeTab = $state<'all' | 'apps' | 'clipboard'>('all');
   let selectedIndex = $state(0);
+  let showActionPalette = $state(false);
+  let actionPaletteIndex = $state(0);
+  let currentTheme = $state<'default' | 'theme-catppuccin' | 'theme-tokyo' | 'theme-nord'>('default');
 
   let searchResults = $state<AppItem[]>([]);
   let clipboardItems = $state<ClipboardEntry[]>([]);
@@ -51,6 +60,11 @@
   let searchInputRef = $state<HTMLInputElement | null>(null);
 
   onMount(async () => {
+    const savedTheme = localStorage.getItem('beam_theme');
+    if (savedTheme && ['default', 'theme-catppuccin', 'theme-tokyo', 'theme-nord'].includes(savedTheme)) {
+      currentTheme = savedTheme as typeof currentTheme;
+    }
+
     await performAppSearch('');
     await refreshClipboard();
     if (searchInputRef) {
@@ -58,13 +72,19 @@
     }
   });
 
+  function setTheme(t: typeof currentTheme) {
+    currentTheme = t;
+    localStorage.setItem('beam_theme', t);
+    showActionPalette = false;
+  }
+
   async function performAppSearch(query: string) {
     try {
       const q = query.replace(/^\/clip\s*/, '').trim();
       const apps = await SearchApps(q);
       searchResults = apps || [];
 
-      // Lazy load icons for top items
+      // Lazy load icons for remaining
       for (const app of searchResults.slice(0, 25)) {
         if (app.iconPath && !app.resolvedIcon) {
           LoadIconAsDataURL(app.iconPath).then((dataUrl: string) => {
@@ -86,7 +106,6 @@
     }
   }
 
-  // Reactive search trigger
   $effect(() => {
     const q = searchQuery;
     if (!isClipboardMode) {
@@ -95,7 +114,6 @@
     selectedIndex = 0;
   });
 
-  // Handle live calculation
   $effect(() => {
     const q = searchQuery.trim();
     if (q.length > 1 && /[0-9\+\-\*\/\%\^\(\)]/.test(q)) {
@@ -140,7 +158,99 @@
       : null
   );
 
+  let currentActions = $derived.by((): ActionOption[] => {
+    const list: ActionOption[] = [];
+    if (!isClipboardMode && selectedApp) {
+      list.push({
+        id: 'launch',
+        label: `Open ${selectedApp.name}`,
+        shortcut: '↵',
+        run: () => LaunchApp(selectedApp!.exec, selectedApp!.terminal, selectedApp!.id)
+      });
+      list.push({
+        id: 'term',
+        label: `Run in Terminal`,
+        shortcut: 'Ctrl+T',
+        run: () => LaunchApp(selectedApp!.exec, true, selectedApp!.id)
+      });
+      list.push({
+        id: 'copy-exec',
+        label: 'Copy Command Line',
+        shortcut: 'Ctrl+C',
+        run: () => CopyToClipboard(selectedApp!.exec)
+      });
+      list.push({
+        id: 'copy-path',
+        label: 'Copy Desktop File Path',
+        shortcut: 'Ctrl+P',
+        run: () => CopyToClipboard(selectedApp!.desktopPath)
+      });
+    } else if (isClipboardMode && selectedClip) {
+      list.push({
+        id: 'copy',
+        label: 'Copy to Clipboard',
+        shortcut: '↵',
+        run: () => CopyToClipboard(selectedClip!.content)
+      });
+    }
+
+    // Universal theme actions
+    list.push({
+      id: 'theme-default',
+      label: 'Switch to Default Dark Theme',
+      shortcut: 'T1',
+      run: () => setTheme('default')
+    });
+    list.push({
+      id: 'theme-catppuccin',
+      label: 'Switch to Catppuccin Mocha Theme',
+      shortcut: 'T2',
+      run: () => setTheme('theme-catppuccin')
+    });
+    list.push({
+      id: 'theme-tokyo',
+      label: 'Switch to Tokyo Night Theme',
+      shortcut: 'T3',
+      run: () => setTheme('theme-tokyo')
+    });
+    list.push({
+      id: 'theme-nord',
+      label: 'Switch to Nord Theme',
+      shortcut: 'T4',
+      run: () => setTheme('theme-nord')
+    });
+
+    return list;
+  });
+
   function handleKeyDown(e: KeyboardEvent) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      showActionPalette = !showActionPalette;
+      actionPaletteIndex = 0;
+      return;
+    }
+
+    if (showActionPalette) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (actionPaletteIndex < currentActions.length - 1) actionPaletteIndex++;
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (actionPaletteIndex > 0) actionPaletteIndex--;
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (currentActions[actionPaletteIndex]) {
+          currentActions[actionPaletteIndex].run();
+          showActionPalette = false;
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        showActionPalette = false;
+      }
+      return;
+    }
+
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (selectedIndex < displayItems.length - 1) {
@@ -213,7 +323,7 @@
 
 <svelte:window onkeydown={handleKeyDown} />
 
-<div class="beam-window">
+<div class="beam-window {currentTheme}">
   <!-- Top Search Bar -->
   <header class="beam-header">
     <div class="search-icon">
@@ -235,7 +345,7 @@
 
     {#if isClipboardMode}
       <span class="mode-badge clip-badge">
-        <svg class="badge-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
           <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
         </svg>
@@ -243,7 +353,7 @@
       </span>
     {:else if activeTab === 'apps'}
       <span class="mode-badge app-badge">
-        <svg class="badge-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <circle cx="12" cy="12" r="10"></circle>
           <polygon points="10 8 16 12 10 16 10 8"></polygon>
         </svg>
@@ -294,7 +404,6 @@
             onmouseenter={() => (selectedIndex = idx)}
           >
             {#if isClipboardMode}
-              <!-- Clipboard Entry -->
               {@const clip = item as ClipboardEntry}
               <div class="item-icon-box clip-icon">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -312,7 +421,6 @@
                 <span class="item-action-pill">↵ Copy</span>
               {/if}
             {:else}
-              <!-- App Entry -->
               {@const app = item as AppItem}
               <div class="item-icon-box">
                 {#if app.resolvedIcon}
@@ -400,6 +508,46 @@
     </div>
   </div>
 
+  <!-- Action Palette Modal (Ctrl + K) -->
+  {#if showActionPalette}
+    <div
+      class="action-palette-backdrop"
+      role="button"
+      tabindex="0"
+      aria-label="Close actions"
+      onclick={() => (showActionPalette = false)}
+      onkeydown={(e) => { if (e.key === 'Escape') showActionPalette = false; }}
+    >
+      <div
+        class="action-palette-modal"
+        role="dialog"
+        aria-label="Actions Menu"
+        tabindex="-1"
+        onclick={(e) => e.stopPropagation()}
+        onkeydown={(e) => e.stopPropagation()}
+      >
+        <div class="action-palette-header">
+          <span>Actions</span>
+          <span class="palette-sub">Press Esc to dismiss</span>
+        </div>
+        <div class="action-palette-list">
+          {#each currentActions as action, aIdx}
+            {@const isActSelected = aIdx === actionPaletteIndex}
+            <button
+              type="button"
+              class="action-palette-item {isActSelected ? 'selected' : ''}"
+              onclick={() => { action.run(); showActionPalette = false; }}
+              onmouseenter={() => (actionPaletteIndex = aIdx)}
+            >
+              <span class="action-label">{action.label}</span>
+              <span class="action-shortcut"><kbd>{action.shortcut}</kbd></span>
+            </button>
+          {/each}
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <!-- Footer Action Bar -->
   <footer class="beam-footer">
     <div class="footer-left">
@@ -412,6 +560,7 @@
       {/if}
     </div>
     <div class="footer-right">
+      <span class="footer-hint"><kbd>Ctrl+K</kbd> Actions</span>
       <span class="footer-hint"><kbd>Tab</kbd> Mode</span>
       <span class="footer-hint"><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
       <span class="footer-hint"><kbd>Esc</kbd> Close</span>
@@ -432,6 +581,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
   }
 
   /* Header */
@@ -765,7 +915,7 @@
   }
 
   .placeholder-icon {
-    font-size: 32px;
+    font-size: 30px;
     color: var(--accent-blue);
     opacity: 0.8;
   }
@@ -778,6 +928,71 @@
 
   .detail-placeholder span {
     font-size: 12px;
+  }
+
+  /* Action Palette Modal */
+  .action-palette-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+  }
+
+  .action-palette-modal {
+    width: 480px;
+    background: var(--surface-header);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+    overflow: hidden;
+  }
+
+  .action-palette-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+
+  .palette-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  .action-palette-list {
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 6px;
+  }
+
+  .action-palette-item {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 12px;
+    border-radius: 6px;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 13.5px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s ease;
+  }
+
+  .action-palette-item:hover,
+  .action-palette-item.selected {
+    background: var(--surface-selected);
   }
 
   /* Footer */

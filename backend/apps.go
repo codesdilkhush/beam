@@ -13,16 +13,17 @@ import (
 )
 
 type AppInfo struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Comment     string `json:"comment"`
-	Exec        string `json:"exec"`
-	Icon        string `json:"icon"`
-	IconPath    string `json:"iconPath"`
-	Terminal    bool   `json:"terminal"`
-	DesktopPath string `json:"desktopPath"`
-	Score       int    `json:"score"`
-	LaunchCount int    `json:"launchCount"`
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Comment      string `json:"comment"`
+	Exec         string `json:"exec"`
+	Icon         string `json:"icon"`
+	IconPath     string `json:"iconPath"`
+	Terminal     bool   `json:"terminal"`
+	DesktopPath  string `json:"desktopPath"`
+	Score        int    `json:"score"`
+	LaunchCount  int    `json:"launchCount"`
+	ResolvedIcon string `json:"resolvedIcon"`
 }
 
 var (
@@ -98,11 +99,15 @@ func GetCachedApplications() []AppInfo {
 		return ScanApplications()
 	}
 
-	// Attach latest launch counts
+	// Attach latest launch counts and cached icons
 	stats := GetStatsTracker()
+	iconCache := GetIconCache()
 	result := make([]AppInfo, len(appsCache))
 	for i, a := range appsCache {
 		a.LaunchCount = stats.GetCount(a.ID)
+		if i < 30 && a.IconPath != "" {
+			a.ResolvedIcon = iconCache.GetOrConvert(a.IconPath)
+		}
 		result[i] = a
 	}
 	return result
@@ -111,6 +116,7 @@ func GetCachedApplications() []AppInfo {
 func SearchApplications(query string) []AppInfo {
 	apps := GetCachedApplications()
 	q := strings.TrimSpace(query)
+	iconCache := GetIconCache()
 
 	if q == "" {
 		// Sort by launch count descending, then alphabetical
@@ -120,6 +126,11 @@ func SearchApplications(query string) []AppInfo {
 			}
 			return strings.ToLower(apps[i].Name) < strings.ToLower(apps[j].Name)
 		})
+		for i := 0; i < len(apps) && i < 30; i++ {
+			if apps[i].ResolvedIcon == "" && apps[i].IconPath != "" {
+				apps[i].ResolvedIcon = iconCache.GetOrConvert(apps[i].IconPath)
+			}
+		}
 		return apps
 	}
 
@@ -151,6 +162,12 @@ func SearchApplications(query string) []AppInfo {
 	sort.Slice(matched, func(i, j int) bool {
 		return matched[i].Score > matched[j].Score
 	})
+
+	for i := 0; i < len(matched) && i < 30; i++ {
+		if matched[i].ResolvedIcon == "" && matched[i].IconPath != "" {
+			matched[i].ResolvedIcon = iconCache.GetOrConvert(matched[i].IconPath)
+		}
+	}
 
 	return matched
 }

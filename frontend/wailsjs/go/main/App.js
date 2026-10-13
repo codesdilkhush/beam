@@ -10,12 +10,20 @@ export function EvaluateMath(arg1) {
   return window['go']['main']['App']['EvaluateMath'](arg1);
 }
 
+export function ExecuteScript(arg1) {
+  return window['go']['main']['App']['ExecuteScript'](arg1);
+}
+
 export function GetApplications() {
   return window['go']['main']['App']['GetApplications']();
 }
 
 export function GetClipboard() {
   return window['go']['main']['App']['GetClipboard']();
+}
+
+export function GetScripts() {
+  return window['go']['main']['App']['GetScripts']();
 }
 
 export function HideWindow() {

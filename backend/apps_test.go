@@ -68,3 +68,38 @@ func TestGetDesktopDirectories(t *testing.T) {
 		t.Fatalf("expected at least one desktop directory")
 	}
 }
+
+func TestSearchApplications_EmptyAndQuery(t *testing.T) {
+	// Populate cache with dummy apps
+	appsMutex.Lock()
+	appsCache = []AppInfo{
+		{ID: "app1.desktop", Name: "Google Chrome", Exec: "google-chrome-stable", Comment: "Web Browser"},
+		{ID: "app2.desktop", Name: "Visual Studio Code", Exec: "code", Comment: "Code Editor"},
+		{ID: "app3.desktop", Name: "Terminal", Exec: "gnome-terminal", Comment: "Command Line"},
+	}
+	appsMutex.Unlock()
+
+	// 1. Search with empty query returns all
+	all := SearchApplications("")
+	if len(all) < 3 {
+		t.Errorf("expected at least 3 apps, got %d", len(all))
+	}
+
+	// 2. Search with acronym "gc" matches Google Chrome first
+	results := SearchApplications("gc")
+	if len(results) == 0 {
+		t.Fatalf("expected results for query 'gc'")
+	}
+	if results[0].Name != "Google Chrome" {
+		t.Errorf("expected top result to be 'Google Chrome', got %q", results[0].Name)
+	}
+
+	// 3. Search with "vsc" matches Visual Studio Code
+	resultsVSC := SearchApplications("vsc")
+	if len(resultsVSC) == 0 {
+		t.Fatalf("expected results for query 'vsc'")
+	}
+	if resultsVSC[0].Name != "Visual Studio Code" {
+		t.Errorf("expected top result to be 'Visual Studio Code', got %q", resultsVSC[0].Name)
+	}
+}

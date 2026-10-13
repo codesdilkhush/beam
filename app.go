@@ -2,10 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
-	"fmt"
-	"os"
-	"strings"
 
 	"beam/backend"
 
@@ -16,22 +12,48 @@ import (
 type App struct {
 	ctx       context.Context
 	clipboard *backend.ClipboardManager
+	isVisible bool
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
 	return &App{
 		clipboard: backend.GetClipboardManager(),
+		isVisible: true,
 	}
 }
 
 // startup is called when the app starts.
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	a.isVisible = true
+
 	// Scan applications in background at startup
 	go backend.ScanApplications()
 	// Start clipboard watcher
 	a.clipboard.StartWatcher(ctx)
+
+	// Start single-instance socket daemon
+	sockPath := backend.GetSocketPath()
+	_ = backend.StartDaemonServer(ctx, sockPath, func(cmd string) {
+		if cmd == "toggle" {
+			if a.isVisible {
+				runtime.WindowHide(a.ctx)
+				a.isVisible = false
+			} else {
+				runtime.WindowShow(a.ctx)
+				runtime.WindowCenter(a.ctx)
+				a.isVisible = true
+			}
+		} else if cmd == "show" {
+			runtime.WindowShow(a.ctx)
+			runtime.WindowCenter(a.ctx)
+			a.isVisible = true
+		} else if cmd == "hide" {
+			runtime.WindowHide(a.ctx)
+			a.isVisible = false
+		}
+	})
 }
 
 // GetApplications returns all detected Linux desktop applications
@@ -48,7 +70,7 @@ func (a *App) SearchApps(query string) []backend.AppInfo {
 func (a *App) LaunchApp(execCmd string, terminal bool, appID string) error {
 	err := backend.Launch(execCmd, terminal, appID)
 	if err == nil {
-		// Hide window after successful launch
+		a.isVisible = false
 		runtime.WindowHide(a.ctx)
 	}
 	return err
@@ -63,6 +85,7 @@ func (a *App) GetClipboard() []backend.ClipboardItem {
 func (a *App) CopyToClipboard(text string) error {
 	err := backend.WriteClipboard(text)
 	if err == nil {
+		a.isVisible = false
 		runtime.WindowHide(a.ctx)
 	}
 	return err
@@ -76,12 +99,24 @@ func (a *App) EvaluateMath(expr string) backend.CalcResult {
 // OpenURL opens a URL in the default system browser
 func (a *App) OpenURL(url string) error {
 	runtime.BrowserOpenURL(a.ctx, url)
+	a.isVisible = false
 	runtime.WindowHide(a.ctx)
 	return nil
 }
 
+// GetScripts discovers Raycast script commands in ~/.config/beam/scripts/
+func (a *App) GetScripts() []backend.ScriptCommand {
+	return backend.DiscoverScripts()
+}
+
+// ExecuteScript runs a chosen script command
+func (a *App) ExecuteScript(scriptPath string) (string, error) {
+	return backend.RunScript(scriptPath)
+}
+
 // HideWindow hides the Beam launcher window
 func (a *App) HideWindow() {
+	a.isVisible = false
 	runtime.WindowHide(a.ctx)
 }
 
@@ -90,25 +125,7 @@ func (a *App) QuitApp() {
 	runtime.Quit(a.ctx)
 }
 
-// LoadIconAsDataURL reads a local image/svg and converts to data URI
+// LoadIconAsDataURL reads a local image/svg and converts to data URI using the high-speed icon cache
 func (a *App) LoadIconAsDataURL(iconPath string) string {
-	if iconPath == "" {
-		return ""
-	}
-
-	data, err := os.ReadFile(iconPath)
-	if err != nil {
-		return ""
-	}
-
-	mimeType := "image/png"
-	lower := strings.ToLower(iconPath)
-	if strings.HasSuffix(lower, ".svg") {
-		mimeType = "image/svg+xml"
-	} else if strings.HasSuffix(lower, ".jpg") || strings.HasSuffix(lower, ".jpeg") {
-		mimeType = "image/jpeg"
-	}
-
-	encoded := base64.StdEncoding.EncodeToString(data)
-	return fmt.Sprintf("data:%s;base64,%s", mimeType, encoded)
+	return backend.GetIconCache().GetOrConvert(iconPath)
 }

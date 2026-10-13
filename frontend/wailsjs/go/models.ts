@@ -11,6 +11,7 @@ export namespace backend {
 	    desktopPath: string;
 	    score: number;
 	    launchCount: number;
+	    resolvedIcon: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new AppInfo(source);
@@ -28,6 +29,7 @@ export namespace backend {
 	        this.desktopPath = source["desktopPath"];
 	        this.score = source["score"];
 	        this.launchCount = source["launchCount"];
+	        this.resolvedIcon = source["resolvedIcon"];
 	    }
 	}
 	export class CalcResult {
@@ -84,6 +86,28 @@ export namespace backend {
 		    }
 		    return a;
 		}
+	}
+	export class ScriptCommand {
+	    id: string;
+	    title: string;
+	    path: string;
+	    mode: string;
+	    description: string;
+	    author: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ScriptCommand(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.title = source["title"];
+	        this.path = source["path"];
+	        this.mode = source["mode"];
+	        this.description = source["description"];
+	        this.author = source["author"];
+	    }
 	}
 
 }
