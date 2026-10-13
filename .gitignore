@@ -1,0 +1,17 @@
+# Binaries and build outputs
+build/bin/
+build/bin/*
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Node dependencies & dist
+frontend/node_modules/
+node_modules/
+frontend/dist/
+dist/
+
+# Logs and temp files
+*.log
+.DS_Store
